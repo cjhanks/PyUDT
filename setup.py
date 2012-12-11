@@ -48,7 +48,7 @@ udt4 = Extension(
         include_dirs    = ['/usr/local/include'],
         libraries       = ['udt'],
         library_dirs    = ['/usr/local/lib'],
-        extra_link_args = ['-g -O3 -Wall -Wextra']
+        extra_link_args = ['-g -O3 -Wall -Wextra -Werror']
         )
 
 setup(
