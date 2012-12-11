@@ -1,6 +1,7 @@
 /**
         @author         Christopher J. Hanks    <develop@cjhanks.name>
-        @license        See below
+        @license        py-udt4 is GPLv3, however it must be linked against UDT4
+                        libraries to be of use.  UDT4 license is below.
         @date           12/11/2012 
 
         # - UDT LICENSE ------------------------------------------------------ 
@@ -38,6 +39,7 @@
         SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         -----------------------------------------------------------------------
   */
+
 #include <arpa/inet.h> 
 #include <netdb.h>
 #include <stdio.h>
