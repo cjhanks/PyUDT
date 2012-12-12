@@ -192,7 +192,7 @@ pyudt4_bind(PyObject *py_self, PyObject *args)
 
                 return Py_BuildValue("i", -2);
         } else {
-                /* TODO: assert some sanit in the addres/port */
+                /* TODO: assert some sanity in the addres/port */
                 sock = (pyudt4_socket_obj*) sock_obj;
         }
         
@@ -201,7 +201,7 @@ pyudt4_bind(PyObject *py_self, PyObject *args)
              == 0) {
                 PyErr_SetString(
                         PyExc_ValueError,
-                        "invalid addres (invalid inet_pton(...)"
+                        "invalid address (invalid inet_pton(...)"
                         );
                 
                 return Py_BuildValue("i", res);
@@ -321,18 +321,48 @@ pyudt4_connect(PyObject *py_self, PyObject *args)
 {
         PyObject *sock_obj      = 0x0;
         pyudt4_socket_obj *sock = 0x0;
+        
+        char *host;
+        int   port;
+        
+        int res;
 
-        if (!PyArg_ParseTuple(args, "O", &sock_obj)) {
+        if (!PyArg_ParseTuple(args, "Osi", &sock_obj)) {
                 PyErr_SetString(
                         PyExc_TypeError,
                         "arguments: [UDTSOCKET]"
                         );
                 
-                return Py_BuildValue("i", 1);
+                return Py_BuildValue("i", -1);
         } else {
+                /* TODO assert some sanity in the address/port */
                 sock = (pyudt4_socket_obj*) sock_obj;
         }
+        
+        sockaddr_in serv;
+        serv.sin_family = sock->domain;
+        serv.sin_port   = htons(port);
 
+        if (inet_pton(sock->domain, host, &serv.sin_addr) <= 0) {
+                PyErr_SetString(
+                        PyExc_RuntimeError,
+                        "Failed to set the family"
+                        );
+                return Py_BuildValue("i", -1);
+        } else {
+                memset(&serv.sin_addr, '\0', sizeof(serv.sin_addr));
+        }
+        
+        if (UDT::ERROR == (res = UDT::connect(sock->sock, (sockaddr*) &serv,
+                                                  sizeof(serv)))) {
+                PyErr_SetString(
+                        PyExc_RuntimeError, 
+                        UDT::getlasterror().getErrorMessage()
+                        );
+                return Py_BuildValue("i", res);
+        }
+        
+        return Py_BuildValue("i", 0);
 }
 
 
@@ -353,9 +383,10 @@ pyudt4_close(PyObject *py_self, PyObject *args)
                 sock = (pyudt4_socket_obj*) sock_obj;
         }
 
-         
+        return Py_BuildValue("i", UDT::close(sock->sock));
 } 
 
+/*
 static PyObject*
 pyudt4_getpeername(PyObject *py_self, PyObject *args)
 {
@@ -372,6 +403,8 @@ pyudt4_getpeername(PyObject *py_self, PyObject *args)
         } else {
                 sock = (pyudt4_socket_obj*) sock_obj;
         }
+        
+
 } 
 
 
@@ -392,15 +425,22 @@ pyudt4_getsockname(PyObject *py_self, PyObject *args)
                 sock = (pyudt4_socket_obj*) sock_obj;
         }
 } 
-
+*/
 
 static PyObject*
 pyudt4_setsockopt(PyObject *py_self, PyObject *args)
 {
+        int rc; 
+
         PyObject *sock_obj      = 0x0;
         pyudt4_socket_obj *sock = 0x0;
-
-        if (!PyArg_ParseTuple(args, "O", &sock_obj)) {
+        
+        int          level;
+        int          optname_i;
+        UDT::SOCKOPT optname;
+        PyObject    *optval_o;
+         
+        if (!PyArg_ParseTuple(args, "OiO", &sock_obj, &optname_i, &optval_o)) {
                 PyErr_SetString(
                         PyExc_TypeError,
                         "arguments: [UDTSOCKET]"
@@ -408,18 +448,131 @@ pyudt4_setsockopt(PyObject *py_self, PyObject *args)
                 
                 return Py_BuildValue("i", 1);
         } else {
-                sock = (pyudt4_socket_obj*) sock_obj;
+                sock    = (pyudt4_socket_obj*) sock_obj;
+                optname = (UDT::SOCKOPT) optname_i;
         }
+        
+        switch (optname) {
+        
+        /* int cases */
+        case UDT_MSS     :
+        case UDT_FC      :
+        case UDT_SNDBUF  :
+        case UDT_RCVBUF  :
+        case UDP_SNDBUF  :
+        case UDP_RCVBUF  :
+        case UDT_SNDTIMEO:
+        case UDT_RCVTIMEO:
+        case UDT_MAXBW   : {
+
+                if (UDT_MAXBW == optname) {
+                        long *optval = (long*) optval_o;
+                        if (
+                            UDT::ERROR == 
+                            (rc = UDT::setsockopt(sock->sock, 0, optname, 
+                                                  optval, sizeof(long)))
+                            )
+                                PyErr_SetString(
+                                        PyExc_RuntimeError, 
+                                        UDT::getlasterror().getErrorMessage()
+                                        );
+                } else { 
+                        int *optval = (int*) optval_o;
+                        if (
+                            UDT::ERROR == 
+                            (rc = UDT::setsockopt(sock->sock, 0, optname, 
+                                                  optval, sizeof(int)))
+                            )
+                                PyErr_SetString(
+                                        PyExc_RuntimeError, 
+                                        UDT::getlasterror().getErrorMessage()
+                                        );
+                }
+        
+                return Py_BuildValue("i", rc);
+        }
+
+        case UDT_SNDSYN    :
+        case UDT_RCVSYN    :
+        case UDT_RENDEZVOUS:
+        case UDT_REUSEADDR : {
+                bool optval;
+
+                if (Py_True  == optval_o) {
+                        optval = true;
+                } else if (Py_False == optval_o) {
+                        optval = false;
+                } else {
+                        PyErr_SetString(
+                                PyExc_TypeError,
+                                "option value must be of type(bool())"
+                                );
+                        return Py_BuildValue("i", -1);
+                }
+
+                if (UDT::ERROR == (rc = UDT::setsockopt(sock->sock, 0, optname,
+                                                        &optval, sizeof(bool))))
+                        PyErr_SetString(
+                                PyExc_RuntimeError, 
+                                "Failed to set socket option"
+                                );
+                
+                return Py_BuildValue("i", rc); 
+        }
+
+        case UDT_LINGER: {
+                linger optval;
+
+                if (!PyArg_ParseTuple(args, "Oiii", &sock_obj, &level, 
+                                      &optval.l_onoff, &optval.l_linger)) {
+                        PyErr_SetString(
+                                PyExc_TypeError,
+                                "invalid arguments for linger" 
+                                );
+
+                        return Py_BuildValue("i", -1);
+                }
+
+                if (UDT::ERROR == (rc = UDT::setsockopt(sock->sock, 0, optname,
+                                                     &optval, sizeof(optval))))
+
+                        PyErr_SetString(
+                                PyExc_RuntimeError, 
+                                UDT::getlasterror().getErrorMessage()
+                                ); 
+
+                return Py_BuildValue("i", rc);
+        }
+
+        default: {
+                PyErr_SetString(
+                        PyExc_ValueError,
+                        "invalid option name"  
+                        );
+                
+                return Py_BuildValue("i", -1);
+        }
+        }
+        
+        return Py_BuildValue("i", -1);
+
 } 
 
 
 static PyObject*
 pyudt4_getsockopt(PyObject *py_self, PyObject *args)
 {
+        int rc; 
+
         PyObject *sock_obj      = 0x0;
         pyudt4_socket_obj *sock = 0x0;
-
-        if (!PyArg_ParseTuple(args, "O", &sock_obj)) {
+        
+        int          level;
+        int          optname_i;
+        UDT::SOCKOPT optname;
+        int          len;
+         
+        if (!PyArg_ParseTuple(args, "Oi", &sock_obj, &optname_i)) {
                 PyErr_SetString(
                         PyExc_TypeError,
                         "arguments: [UDTSOCKET]"
@@ -427,8 +580,111 @@ pyudt4_getsockopt(PyObject *py_self, PyObject *args)
                 
                 return Py_BuildValue("i", 1);
         } else {
-                sock = (pyudt4_socket_obj*) sock_obj;
+                sock    = (pyudt4_socket_obj*) sock_obj;
+                optname = (UDT::SOCKOPT) optname_i;
         }
+
+        switch (optname) {
+        
+        /* int cases */
+        case UDT_MSS     :
+        case UDT_FC      :
+        case UDT_SNDBUF  :
+        case UDT_RCVBUF  :
+        case UDP_SNDBUF  :
+        case UDP_RCVBUF  :
+        case UDT_SNDTIMEO:
+        case UDT_RCVTIMEO: {
+                long optval;
+                if (
+                    UDT::ERROR == 
+                    (rc = UDT::getsockopt(sock->sock, 0, optname, 
+                                          &optval, &len))
+                    ) { 
+                        PyErr_SetString(
+                                PyExc_RuntimeError, 
+                                UDT::getlasterror().getErrorMessage()
+                                );
+
+                        return Py_BuildValue("i", 
+                                        UDT::getlasterror().getErrorCode()
+                                        );
+                } else {
+                        return Py_BuildValue("l", optval);
+                }
+        }
+
+        case UDT_MAXBW   : {
+                int optval; 
+                if (
+                    UDT::ERROR == 
+                    (rc = UDT::getsockopt(sock->sock, 0, optname, 
+                                          &optval, &len))
+                    ) {
+                        PyErr_SetString(
+                                PyExc_RuntimeError, 
+                                UDT::getlasterror().getErrorMessage()
+                                );
+                        return Py_BuildValue("i", 
+                                        UDT::getlasterror().getErrorCode()
+                                        );
+                }
+                        
+                return Py_BuildValue("i", optval);
+        }
+
+        case UDT_SNDSYN    :
+        case UDT_RCVSYN    :
+        case UDT_RENDEZVOUS:
+        case UDT_REUSEADDR : {
+                bool optval;
+                
+                if (UDT::ERROR == (rc = UDT::getsockopt(sock->sock, 0, optname,
+                                                        &optval, &len))) {
+                        PyErr_SetString(
+                                PyExc_RuntimeError, 
+                                "Failed to set socket option"
+                                );
+                        
+                        return Py_BuildValue("i", 
+                                        UDT::getlasterror().getErrorCode()
+                                        );
+                } else {
+                        return (optval) ? Py_True : Py_False;
+                }
+        }
+
+        case UDT_LINGER: {
+                linger optval;
+
+                if (UDT::ERROR == (rc = UDT::getsockopt(sock->sock, 0, optname,
+                                                        &optval, &len))) {
+                        PyErr_SetString(
+                                PyExc_RuntimeError, 
+                                UDT::getlasterror().getErrorMessage()
+                                );
+                
+                        return Py_BuildValue("i", 
+                                        UDT::getlasterror().getErrorCode()
+                                        );
+                } else {
+                        return Py_BuildValue(
+                                        "ii", optval.l_onoff, optval.l_linger
+                                        );
+                }
+        }
+
+        default: {
+                PyErr_SetString(
+                        PyExc_ValueError,
+                        "invalid option name"  
+                        );
+                
+                return Py_BuildValue("i", -1);
+        }
+        }
+        
+        return Py_BuildValue("i", -1);
 }
 
 static PyObject*
@@ -595,6 +851,7 @@ static PyMethodDef pyudt4_module_methods[] = {
                 METH_VARARGS,
                 ""
         },
+        /*
         {
                 "getpeername",
                 (PyCFunction)pyudt4_getpeername,
@@ -607,6 +864,7 @@ static PyMethodDef pyudt4_module_methods[] = {
                 METH_VARARGS,
                 ""
         },
+        */
         {
                 "setsockopt",
                 (PyCFunction)pyudt4_setsockopt,
