@@ -1,0 +1,9 @@
+
+This test iterates through all possibilities of passing messages between C and 
+Python.
+
+Each test initializes a server which waits to accept the client.
+
+Server writes the int length, then the message "message in a bottle".
+Client writes the int length, then the message "no bottle found" 
+

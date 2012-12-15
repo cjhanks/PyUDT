@@ -45,8 +45,13 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <assert.h> 
+
+#include <iostream>
 
 #include "py-udt4.hh"
+
+#define DEBUG(_msg_) fprintf(stderr, _msg_) 
 
 #define RETURN_UDT_RUNTIME_ERROR \
         do {\
@@ -55,12 +60,8 @@
                         UDT::getlasterror().getErrorMessage()\
                         );\
                 \
-                return Py_BuildValue("i", \
-                                UDT::getlasterror().getErrorCode()\
-                                );\
+                return 0x0;\
         } while (0)
-
-
 
 
 
@@ -78,9 +79,37 @@ pyudt4_socket_new(PyTypeObject *type)
         self->domain   = 0;
         self->type     = 0;
         self->protocol = 0;
-
+        
         return (PyObject*)self;
 }
+
+static PyObject*
+pyudt4_socket_debug(PyObject *py_self)
+{
+        pyudt4_socket_obj *self = (pyudt4_socket_obj*) py_self;
+
+        fprintf(stderr,
+                "------------\n"
+                "Socket:   %i\n"
+                "Domain:   %i\n"
+                "Type:     %i\n"
+                "Protocol: %i\n"
+                "------------\n", self->sock, self->domain, self->type,
+                                  self->protocol
+               );
+
+        Py_RETURN_NONE;
+}
+
+static PyMethodDef pyudt4_socket_methods[] = {
+        {
+                "debug",
+                (PyCFunction)pyudt4_socket_debug,
+                METH_NOARGS,
+                ""
+        },
+        { 0x0 }
+};
         
 static PyGetSetDef  pyudt4_socket_getset[] = {
         { 0x0 }
@@ -115,7 +144,7 @@ static PyTypeObject pyudt4_socket_type = {
     0,                                          /* tp_weaklistoffset    */
     0,                                          /* tp_iter              */
     0,                                          /* tp_iternext          */
-    0,//pyudt4_socket_methods,                      /* tp_methods           */
+    pyudt4_socket_methods,                      /* tp_methods           */
     0,                                          /* tp_members           */
     pyudt4_socket_getset,                       /* tp_getset            */
     0,                                          /* tp_base              */
@@ -201,27 +230,28 @@ pyudt4_bind(PyObject *py_self, PyObject *args)
                         PyExc_TypeError,
                         "arguments: [address] [port]"
                         );
-
-                return Py_BuildValue("i", -2);
+                
+                return 0x0;
         } else {
                 /* TODO: assert some sanity in the addres/port */
                 sock = (pyudt4_socket_obj*) sock_obj;
         }
         
-        int res = 0;
-        if ((res = inet_pton(sock->domain, address, &sock_addr.sin_addr))
-             == 0) {
+        /*
+        if (inet_pton(sock->domain, address, &sock_addr.sin_addr) == 0) {
                 PyErr_SetString(
                         PyExc_ValueError,
                         "invalid address (invalid inet_pton(...)"
                         );
                 
-                return Py_BuildValue("i", res);
+                return 0x0;
         }
+        */
 
-        sock_addr.sin_family = sock->domain;
-        sock_addr.sin_port   = htons(port);
-        
+        sock_addr.sin_family      = sock->domain;
+        sock_addr.sin_port        = htons(port);
+        sock_addr.sin_addr.s_addr = INADDR_ANY; 
+
         memset(&sock_addr.sin_zero, '\0', sizeof(sock_addr.sin_zero));
 
         if (UDT::ERROR == UDT::bind(sock->sock, (sockaddr*) &sock_addr,
@@ -245,19 +275,19 @@ pyudt4_listen(PyObject *py_self, PyObject *args)
                         PyExc_TypeError,
                         "arguments: [UDTSOCKET] [backlog]"
                         );
-
-                return Py_BuildValue("i", -1);
+        
+                return 0x0;
         } else if (backlog <= 0) {
                 PyErr_SetString(
                         PyExc_ValueError,
                         "invalid value for backlog (<= 0)"
                         );
                 
-                return Py_BuildValue("i", -2);
+                return 0x0;
         } else {
                 sock = (pyudt4_socket_obj*) sock_obj;
         }
-
+        
         if (UDT::listen(sock->sock, backlog)) {
                 RETURN_UDT_RUNTIME_ERROR;
         }
@@ -278,7 +308,7 @@ pyudt4_accept(PyObject *py_self, PyObject *args)
                         "arguments: [UDTSOCKET] [backlog]"
                         );
                 
-                return Py_BuildValue("i", -1);
+                return 0x0;
         } else {
                 sock = (pyudt4_socket_obj*) sock_obj;
         }
@@ -296,7 +326,8 @@ pyudt4_accept(PyObject *py_self, PyObject *args)
         /* create a socket */
         pyudt4_socket_obj *client_sock = 
                 (pyudt4_socket_obj*)_PyObject_New(&pyudt4_socket_type);
-
+        
+        client_sock->sock     = client;
         client_sock->domain   = sock->domain;
         client_sock->type     = sock->type;
         client_sock->protocol = sock->protocol;
@@ -311,35 +342,35 @@ pyudt4_accept(PyObject *py_self, PyObject *args)
                     client_host, sizeof(client_host) , 
                     client_srvc, sizeof(client_srvc) ,
                     NI_NUMERICHOST|NI_NUMERICSERV);
-
-        return Py_BuildValue("Us", (PyObject*) client_sock, client_host);
+        
+        return Py_BuildValue("Os", (PyObject*) client_sock, client_host); 
 }
 
 
 static PyObject*
 pyudt4_connect(PyObject *py_self, PyObject *args)
 {
+
         PyObject *sock_obj      = 0x0;
         pyudt4_socket_obj *sock = 0x0;
         
         char *host = 0x0;
         int   port = -1;;
         
-        int rc;
-
-        if (!PyArg_ParseTuple(args, "Osi", &sock_obj)) {
+        if (!PyArg_ParseTuple(args, "Osi", &sock_obj, &host, &port)) {
                 PyErr_SetString(
                         PyExc_TypeError,
                         "arguments: [UDTSOCKET]"
                         );
-                
-                return Py_BuildValue("i", -1);
+
+                return 0x0; 
         } else {
                 /* TODO assert some sanity in the address/port */
                 sock = (pyudt4_socket_obj*) sock_obj;
         }
-        
+       
         sockaddr_in serv;
+        assert(sock->domain == AF_INET);
         serv.sin_family = sock->domain;
         serv.sin_port   = htons(port);
 
@@ -348,13 +379,14 @@ pyudt4_connect(PyObject *py_self, PyObject *args)
                         PyExc_RuntimeError,
                         "Failed to set the family"
                         );
-                return Py_BuildValue("i", -1);
+                
+                return 0x0;
         } else {
-                memset(&serv.sin_addr, '\0', sizeof(serv.sin_addr));
-        }
+                memset(&serv.sin_zero, '\0', sizeof(serv.sin_zero));
+        }        
         
-        if (UDT::ERROR == (rc = UDT::connect(sock->sock, (sockaddr*) &serv,
-                                                  sizeof(serv)))) {
+        if (UDT::ERROR == UDT::connect(sock->sock, (sockaddr*) &serv, 
+                                       sizeof(serv))) {
                 RETURN_UDT_RUNTIME_ERROR;
         }
         
@@ -374,7 +406,7 @@ pyudt4_close(PyObject *py_self, PyObject *args)
                         "arguments: [UDTSOCKET]"
                         );
                 
-                return Py_BuildValue("i", 1);
+                return 0x0;
         } else {
                 sock = (pyudt4_socket_obj*) sock_obj;
         }
@@ -431,15 +463,14 @@ pyudt4_setsockopt(PyObject *py_self, PyObject *args)
         PyObject *sock_obj      = 0x0;
         pyudt4_socket_obj *sock = 0x0;
         
-        int          level;
         int          optname_i;
         UDT::SOCKOPT optname;
-        PyObject    *optval_o;
+        long         optval_o;
          
-        if (!PyArg_ParseTuple(args, "OiO", &sock_obj, &optname_i, &optval_o)) {
+        if (!PyArg_ParseTuple(args, "Oil", &sock_obj, &optname_i, &optval_o)) {
                 PyErr_SetString(
                         PyExc_TypeError,
-                        "arguments: [UDTSOCKET]"
+                        "arguments: [UDTSOCKET] [OPTION] [OPTVALUE]"
                         );
                 
                 return Py_BuildValue("i", 1);
@@ -447,6 +478,8 @@ pyudt4_setsockopt(PyObject *py_self, PyObject *args)
                 sock    = (pyudt4_socket_obj*) sock_obj;
                 optname = (UDT::SOCKOPT) optname_i;
         }
+        
+        //DEBUG("here\n");
         
         switch (optname) {
         
@@ -462,21 +495,23 @@ pyudt4_setsockopt(PyObject *py_self, PyObject *args)
         case UDT_MAXBW   : {
 
                 if (UDT_MAXBW == optname) {
-                        long *optval = (long*) optval_o;
+                        long optval = optval_o;
                         if (
                             UDT::ERROR == 
                             (rc = UDT::setsockopt(sock->sock, 0, optname, 
-                                                  optval, sizeof(long)))
+                                                  &optval, sizeof(long)))
                             ) 
                                 RETURN_UDT_RUNTIME_ERROR;
-                } else { 
-                        int *optval = (int*) optval_o;
+                } else {
+                        int optval = optval_o; 
+
                         if (
                             UDT::ERROR == 
                             (rc = UDT::setsockopt(sock->sock, 0, optname, 
-                                                  optval, sizeof(int)))
-                            )
+                                                  &optval, sizeof(int)))
+                            ) {
                                 RETURN_UDT_RUNTIME_ERROR;
+                        }
                 }
         
                 return Py_BuildValue("i", rc);
@@ -486,16 +521,26 @@ pyudt4_setsockopt(PyObject *py_self, PyObject *args)
         case UDT_RCVSYN    :
         case UDT_RENDEZVOUS:
         case UDT_REUSEADDR : {
+                PyObject *py_optval;        
                 bool optval;
+               
+                if (!PyArg_ParseTuple(args, "OiO", &sock_obj, &optname_i, 
+                                      &py_optval)) {
+                        PyErr_SetString(
+                                PyExc_TypeError,
+                                "invalid arguments for [OiO]" 
+                                );
+                        return Py_BuildValue("i", -1);
+                }
 
-                if (Py_True  == optval_o) {
+                if      (Py_True  == py_optval) {
                         optval = true;
-                } else if (Py_False == optval_o) {
+                } else if (Py_False == py_optval) {
                         optval = false;
                 } else {
                         PyErr_SetString(
-                                PyExc_TypeError,
-                                "option value must be of type(bool())"
+                                PyExc_ValueError,
+                                "3rd option must be of bool type"
                                 );
                         return Py_BuildValue("i", -1);
                 }
@@ -510,14 +555,14 @@ pyudt4_setsockopt(PyObject *py_self, PyObject *args)
         case UDT_LINGER: {
                 linger optval;
 
-                if (!PyArg_ParseTuple(args, "Oiii", &sock_obj, &level, 
+                if (!PyArg_ParseTuple(args, "Oiii", &sock_obj, 0, 
                                       &optval.l_onoff, &optval.l_linger)) {
                         PyErr_SetString(
                                 PyExc_TypeError,
                                 "invalid arguments for linger" 
                                 );
-
-                        return Py_BuildValue("i", -1);
+                        
+                        return 0x0;
                 }
 
                 if (UDT::ERROR == (rc = UDT::setsockopt(sock->sock, 0, optname,
@@ -533,7 +578,7 @@ pyudt4_setsockopt(PyObject *py_self, PyObject *args)
                         "invalid option name"  
                         );
                 
-                return Py_BuildValue("i", -1);
+                return 0x0;
         }
         }
         
@@ -553,22 +598,22 @@ pyudt4_getsockopt(PyObject *py_self, PyObject *args)
         int          optname_i;
         UDT::SOCKOPT optname;
         int          len;
-         
+
+
+
         if (!PyArg_ParseTuple(args, "Oi", &sock_obj, &optname_i)) {
                 PyErr_SetString(
                         PyExc_TypeError,
                         "arguments: [UDTSOCKET]"
                         );
                 
-                return Py_BuildValue("i", 1);
+                return 0x0;
         } else {
                 sock    = (pyudt4_socket_obj*) sock_obj;
                 optname = (UDT::SOCKOPT) optname_i;
         }
-
-        switch (optname) {
         
-        /* int cases */
+        switch (optname) {
         case UDT_MSS     :
         case UDT_FC      :
         case UDT_SNDBUF  :
@@ -577,7 +622,8 @@ pyudt4_getsockopt(PyObject *py_self, PyObject *args)
         case UDP_RCVBUF  :
         case UDT_SNDTIMEO:
         case UDT_RCVTIMEO: {
-                long optval;
+                int optval;
+                len = sizeof(optval);
                 if (
                     UDT::ERROR == 
                     (rc = UDT::getsockopt(sock->sock, 0, optname, 
@@ -590,7 +636,7 @@ pyudt4_getsockopt(PyObject *py_self, PyObject *args)
         }
 
         case UDT_MAXBW   : {
-                int optval; 
+                long optval; 
                 if (
                     UDT::ERROR == 
                     (rc = UDT::getsockopt(sock->sock, 0, optname, 
@@ -635,7 +681,7 @@ pyudt4_getsockopt(PyObject *py_self, PyObject *args)
                         "invalid option name"  
                         );
                 
-                return Py_BuildValue("i", -1);
+                return 0x0;
         }
         }
         
@@ -661,7 +707,7 @@ pyudt4_send(PyObject *py_self, PyObject *args)
                         "arguments: [UDTSOCKET]"
                         );
                 
-                return Py_BuildValue("i", 0);
+                return 0x0;
         } else {
                 if ((pref_len - buf_len) > buf_len) {
                         PyErr_SetString(
@@ -670,7 +716,7 @@ pyudt4_send(PyObject *py_self, PyObject *args)
                                 "buffer length"
                                 );
 
-                        return Py_BuildValue("i", 0);
+                        return 0x0;
                 }
 
                 sock = (pyudt4_socket_obj*) sock_obj;
@@ -713,10 +759,10 @@ pyudt4_recv(PyObject *py_self, PyObject *args)
         if (!PyArg_ParseTuple(args, "Oi", &sock_obj, &buf_len)) {
                 PyErr_SetString(
                         PyExc_TypeError,
-                        "arguments: [UDTSOCKET]"
+                        "arguments: [UDTSOCKET] [INT]" 
                         );
                 
-                return Py_BuildValue("i", 0);
+                return 0x0;
         } else {
                 sock = (pyudt4_socket_obj*) sock_obj;
         }
@@ -728,7 +774,8 @@ pyudt4_recv(PyObject *py_self, PyObject *args)
                         PyExc_RuntimeError, 
                         "memory allocation error"
                         );
-                return Py_BuildValue("i", 0); 
+
+                return 0x0;
         }
 
         memset(buf, '\0', buf_len);
@@ -737,15 +784,10 @@ pyudt4_recv(PyObject *py_self, PyObject *args)
 
         if (UDT::ERROR == rc) {
                 free(buf);
-                PyErr_SetString(
-                        PyExc_RuntimeError, 
-                        UDT::getlasterror().getErrorMessage()
-                        );
-                
-                return Py_BuildValue("i", 0); 
+                RETURN_UDT_RUNTIME_ERROR;
         }
 
-        PyObject *ret = Py_BuildValue("y#", buf, buf_len);
+        PyObject *ret = Py_BuildValue("s#", buf, buf_len);
         free(buf);
 
         return ret;
@@ -979,6 +1021,8 @@ initudt4()
             PyModule_AddIntConstant(m, "UDT_LINGER"    , UDT_LINGER    ) < 0 ||
             PyModule_AddIntConstant(m, "UDT_SNDBUF"    , UDT_SNDBUF    ) < 0 ||
             PyModule_AddIntConstant(m, "UDT_RCVBUF"    , UDT_RCVBUF    ) < 0 ||
+            PyModule_AddIntConstant(m, "UDP_SNDBUF"    , UDP_SNDBUF    ) < 0 ||
+            PyModule_AddIntConstant(m, "UDP_RCVBUF"    , UDP_RCVBUF    ) < 0 ||
             PyModule_AddIntConstant(m, "UDT_MAXMSG"    , UDT_MAXMSG    ) < 0 ||
             PyModule_AddIntConstant(m, "UDT_MSGTTL"    , UDT_MSGTTL    ) < 0 ||
             PyModule_AddIntConstant(m, "UDT_RENDEZVOUS", UDT_RENDEZVOUS) < 0 ||
