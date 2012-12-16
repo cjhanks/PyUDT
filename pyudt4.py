@@ -14,9 +14,7 @@ from   udt4 import *
 __author__  = 'Christopher J. Hanks <develop@cjhanks.name>'
 __date__    = '12/15/2012' 
 __all__     = os._get_exports_list(udt4) + \
-              [
-                'UdtSocket'
-              ]
+              ['UdtSocket']
 
 
 class UdtSocket(object):
@@ -26,6 +24,18 @@ class UdtSocket(object):
     def __init__(self, family = socklib.AF_INET, type = socklib.SOCK_STREAM,
                  protocol = 0, _sock = None):
         """
+        @param  family      UDT requires this family to be AF_INET 
+        @type   family      int() 
+
+        @param  type        SOCK_STREAM or SOCK_DGRAM 
+        @type   type        int() 
+        
+        @param  protocol    AI_PASSIVE or int(0) are tested working.
+        @type   protocol    int() 
+        
+        @param  _sock       Internally used to implement a dup()  
+        @type   _sock       UdtSocket() 
+
         """
         if _sock != None:
             self.__sock = _sock
@@ -35,19 +45,37 @@ class UdtSocket(object):
 
     @property
     def family(self):
+        """ 
+        @return socket domain
+        """
         return self.__sock.domain
 
 
     @property
     def proto(self):
+        """
+        @return socket protocol
+        """
         return self.__sock.protocol
+
 
     @property
     def type(self):
+        """
+        @return socket type
+        """
         return self.__sock.type
 
 
     def __del__(self):
+        """
+        UDT typically has a very large write and read buffer due to its UDP 
+        aknowledgment strategy (this is only a guess).  As a result data will
+        appear as written while it has significant data in wait. 
+
+        Resultantly __del__ may appear to 'hang', this is the defined correct
+        behaviour.
+        """
         try:
             self.close()
         except Exception as err:
@@ -56,45 +84,66 @@ class UdtSocket(object):
 
     def accept(self):
         """
+        Blocking call.  Currently this call will block permanently and 
+        EscapeExceptions will not break its execution (unforunately)
+
+        @return tuple( UdtSocket(sock), str(host) )
         """
-        pass 
+        return udt4.accept(self.__sock) 
 
 
-    def bind(self):
+    def bind(self, address):
         """
+        Binds port to device associted with address and specific port.
+
+        @param  address device ip port pair  
+        @type   address tuple( str(), int() )
         """
-        pass
+        udt4.bind(self.__sock, str(address[0]), int(addres[1]))
+        
 
 
     def close(self):
         """
+        Closes a socket connection, please @see UdtSocket.__del__ for expected
+        behaviour explanation.
         """
-        pass
+        udt4.close(self.__sock)  
 
 
     def connect(self, address):
         """
+        Connects local socket to specific host port pair
+
+        @param  address Host:Port pair
+        @type   address tuple( str(), int() ) 
         """
         udt4.connect(self.__sock, address[0], address[1])
 
     
     def connect_ex(self, address):
         """
+        Like UdtSocket.connect() except any Errors are caught and returned as
+        error codes.
         """
         try:
             self.connect(address)
-        except Exception as err:
+        except RuntimeError as err:
             return 1 # TODO: get exception error code 
 
 
     def dup(self):
         """
+        Duplicates the socket and place it in a second socket.  There is no 
+        'true' dup() in UDT.  The way the library works behind the scene it will
+        work as expected anyways.
         """
         return UdtSocket(self.__sock.domain  , self.__sock.type, 
                          self.__sock.protocol, self.__sock)
 
 
     def fileno(self, udt_fileno = False):
+        # TODO: Find out how to find underlying UDP fileno from UDT fileno in lib
         """
         @param  udt_fileno  Return udt fileno instead of udp?
         @type   bool() 
@@ -106,7 +155,8 @@ class UdtSocket(object):
 
         @return underlying fileno ::int() 
         """
-        pass
+        return self.__sock.sock 
+        
 
 
     def getpeername(self):
@@ -115,7 +165,7 @@ class UdtSocket(object):
 
         @return tuple( str(hostname), int(port) )
         """
-        pass
+        return udt4.getpeername(self.__sock) 
 
 
     def getsockname(self):
@@ -124,7 +174,7 @@ class UdtSocket(object):
 
         @return tuple( str(hostname), int(port) )
         """
-        pass
+        return udt4.getsockname(self.__sock)  
 
 
     def getsockopt(self, option):
@@ -151,6 +201,10 @@ class UdtSocket(object):
 
     def listen(self, backlog):
         """
+        Set socket listen count 
+
+        @param  backlog Backlog count
+        @type   backlog int() 
         """
         udt4.listen(self.__sock, backlog)
 
@@ -242,7 +296,13 @@ class UdtSocket(object):
     
 
     def recv(self, size):
-        pass 
+        """
+        Receive data from socket.
+
+        @return str(returned_data) 
+        """
+        return udt4.recv(self.__sock, size)
+        
 
     
     def recvfrom(self, size):
@@ -254,17 +314,45 @@ class UdtSocket(object):
 
     def recvmsg(self, size):
         """
-        For unreliable sending message sending 
+        For unreliable sending message receiving
+
+        @return str(returned_data)
         """
-        pass
+        return udt4.recvmsg(self.__sock, size)  
 
 
     def recvfile(self, fd):
-        pass 
+        # method signature wrong
+        """
+        Receive a file to the provided fd 
+        
+        @return int(bytes_written)
+        """
+        # TODO: This needs fixing inside the udt4 library 
+        if isinstance(basestring, fd):
+            return udt4.recvfile(self.__sock, fd)
+        else:
+            return udt4.recvfile(self.__sock, fd.name)
 
 
     def send(self, data, padding = None):
-        pass
+        """
+        In non-blocking mode this will raise an exception, in blocking 
+        mode (default) the call will wait on freed buffer space.
+
+        @param  data    Data to be written
+        @type   data    str() 
+
+        @param  padding Set a specified size the data should be written onto.
+                        eg: len(data) => 45 padding = 64, data would be sent as
+                        |45 bytes data|19 byte bzero| 
+
+        @type   padding int()
+        """
+        if None == padding:
+            return udt4.send(self.__sock, data)
+        else:
+            return udt4.send(self.__sock, data, padding)
 
     
     def sendto(self, data, padding = None):
@@ -274,18 +362,40 @@ class UdtSocket(object):
         return self.sendmsg(data, padding) 
 
 
-    def sendmsg(self, data, padding = None):
-        pass 
+    def sendmsg(self, data, padding = None, ttl = -1, inorder = False):
+        """
+        In non-blocking mode this will raise an exception, in blocking 
+        mode (default) the call will wait on freed buffer space.
 
+        @param  data    Data to be written
+        @type   data    str() 
+
+        @param  padding Set a specified size the data should be written onto.
+                        eg: len(data) => 45 padding = 64, data would be sent as
+                        |45 bytes data|19 byte bzero| 
+        @type   padding int()
+
+        @param  ttl     Time to live for the message in ms : -1 is infinite 
+                        ie: garuanteed arrival
+        @type   ttl     int()
+
+        @param  inorder Guarantee UDP messages will be received in the order 
+                        they were sent.
+        @type   inorder bool() 
+        """ 
+        if None == padding:
+            return udt4.sendmsg(self.__sock, data)
+        else:
+            return udt4.sendmsg(self.__sock, data, padding)
+         
 
     def sendfile(self, fd):
-        pass 
+        # method signature wrong
+        """
+        """
+        if isinstance(basestring, fd):
+            return udt4.sendfile(self.__sock, fd)
+        else:
+            return udt4.sendfile(self.__sock, fd.name)
 
 
-
-
-
-if __name__ == '__main__':
-    sock = UdtSocket()
-
-    print(sock.family)
