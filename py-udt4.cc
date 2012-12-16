@@ -48,6 +48,7 @@
 #include <assert.h> 
 
 #include <iostream>
+#include <fstream> 
 
 #include "py-udt4.hh"
 
@@ -1102,23 +1103,62 @@ pyudt4_recvmsg(PyObject *py_self, PyObject *args)
         return ret;
 } 
 
-/*
 static PyObject*
 pyudt4_sendfile(PyObject *py_self, PyObject *args)
 {
         PyObject *sock_obj      = 0x0;
         pyudt4_socket_obj *sock = 0x0;
+        
+        char *fname;
+        long  offset;
+        long  size;
+        int   block = 7320000;
 
-        if (!PyArg_ParseTuple(args, "O", &sock_obj)) {
+        if (!PyArg_ParseTuple(args, "Osll|l", &sock_obj, &fname, &offset, &size,
+                              &block)) {
                 PyErr_SetString(
                         PyExc_TypeError,
-                        "arguments: [UDTSOCKET]"
+                        "ERROR HERE"
                         );
-                
-                return Py_BuildValue("i", 1);
+
+                return 0x0;
         } else {
                 sock = (pyudt4_socket_obj*) sock_obj;
         }
+        
+        
+        std::fstream fstrm(fname);
+        
+        if (UDT::ERROR == UDT::sendfile(sock->sock, fstrm, offset, size, block))
+                RETURN_UDT_RUNTIME_ERROR;
+        /*
+        int   buflen = (size > block) ? block : size;
+        char *buffer = (char*)PyMem_Malloc(sizeof(char) * buflen); 
+
+        FILE *fp = PyFile_AsFile(py_fd);
+        fseek(fp, offset, SEEK_SET);
+        
+        long rc;
+        do {    
+                //sleep(2);
+                rc = fread(buffer, sizeof(char), size > buflen ? size : buflen, 
+                           fp);
+                
+                rc = UDT::send(sock->sock, buffer, rc, 0);
+                 
+                size -= rc;
+                
+                if (UDT::ERROR == rc) {
+                        RETURN_UDT_RUNTIME_ERROR;
+                }
+                
+                fprintf(stderr, "send size: %li\n", size);
+
+        } while (size);
+        */
+        fprintf(stderr, "BROKE SEND\n");
+        
+        return Py_BuildValue("i", 0);
 } 
 
 
@@ -1127,19 +1167,54 @@ pyudt4_recvfile(PyObject *py_self, PyObject *args)
 {
         PyObject *sock_obj      = 0x0;
         pyudt4_socket_obj *sock = 0x0;
+        
+        char *fname;
+        long  offset;
+        long  size;
+        int   block = 366000;
 
-        if (!PyArg_ParseTuple(args, "O", &sock_obj)) {
+        if (!PyArg_ParseTuple(args, "Osll|l", &sock_obj, &fname, &offset, &size,
+                              &block)) {
                 PyErr_SetString(
                         PyExc_TypeError,
-                        "arguments: [UDTSOCKET]"
+                        "ERROR HERE"
                         );
-                
-                return Py_BuildValue("i", 1);
+
+                return 0x0;
         } else {
                 sock = (pyudt4_socket_obj*) sock_obj;
         }
+        
+        std::fstream fstrm(fname);
+
+        if (UDT::ERROR == UDT::recvfile(sock->sock, fstrm, offset, size, block))
+                RETURN_UDT_RUNTIME_ERROR;
+        /*
+        int   buflen = (size > block) ? block : size;
+        char *buffer = (char*)PyMem_Malloc(sizeof(char) * buflen); 
+
+        FILE *fp = PyFile_AsFile(py_fd);
+        
+        long rc;
+        do {  
+                //sleep(1);
+                rc = UDT::recv(sock->sock, buffer, 
+                               size > buflen ? buflen : size, 0);
+                
+                if (UDT::ERROR == rc) 
+                        RETURN_UDT_RUNTIME_ERROR;
+                else
+                        size -= rc;
+                
+                rc = fwrite(buffer, sizeof(char), rc, fp);
+                
+                fprintf(stderr, "recv size: %li\n", size);
+        } while (size);
+        */
+        fprintf(stderr, "BROKE RECEIVE\n");
+        
+        return Py_BuildValue("i", 0);
 } 
-*/
 
 
 static PyMethodDef pyudt4_module_methods[] = {
@@ -1239,20 +1314,18 @@ static PyMethodDef pyudt4_module_methods[] = {
                 METH_VARARGS,
                 ""
         },
-        /*
         {
                 "sendfile",
-                (PyCFunction)pyudt4_accept,
+                (PyCFunction)pyudt4_sendfile,
                 METH_VARARGS,
                 ""
         },
         {
                 "recvfile",
-                (PyCFunction)pyudt4_accept,
+                (PyCFunction)pyudt4_recvfile,
                 METH_VARARGS,
                 ""
         },
-        */
         { 0x0 }
 };
 
