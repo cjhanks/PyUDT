@@ -6,8 +6,9 @@ import os
 settings = {
         'host'  :   '127.0.0.1',
         'port'  :   3444,
-        'mode'  :   'DGRAM' 
+        'mode'  :   '!DGRAM' 
         }
+
 
 if os.fork():
     import server

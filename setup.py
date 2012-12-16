@@ -44,7 +44,12 @@ from distutils.core import setup, Extension
 
 udt4 = Extension(
         'udt4',
-        sources         = ['py-udt4.cc'],
+        sources         = [
+            'src/py-udt4.cc', 
+            'src/py-udt4-epoll.cc',
+            'src/py-udt4-socket.cc',
+            'src/py-udt4-exception.cc'
+            ],
         include_dirs    = ['/usr/local/include'],
         libraries       = ['udt', 'pthread'],
         library_dirs    = ['/usr/local/lib'],

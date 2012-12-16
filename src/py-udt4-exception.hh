@@ -2,7 +2,7 @@
         @author         Christopher J. Hanks    <develop@cjhanks.name>
         @license        py-udt4 is GPLv3, however it must be linked against UDT4
                         libraries to be of use.  UDT4 license is below.
-        @date           12/11/2012 
+        @date           12/16/2012 
 
         # - UDT LICENSE ------------------------------------------------------ 
         Copyright (c) 2001 - 2011, The Board of Trustees of the University of 
@@ -40,21 +40,26 @@
         -----------------------------------------------------------------------
   */
 
-#ifndef __PY_UDT_H_
-#define __PY_UDT_H_
+#ifndef __PY_UDT_EXCEPTION_H_
+#define __PY_UDT_EXCEPTION_H_
 
 #include <Python.h>
-#include <udt>
 
-typedef struct __pyudt4_socket_obj {
-        PyObject_HEAD;          /*< std macro           */ 
-        UDTSOCKET sock;         /*< socket implemented  */
-        
-        /* for debug and assertions */
-        int       domain;       /*< socket family       */
-        int       type;         /*< socket type         */
-        int       protocol;     /*< socket protocol     */
-} pyudt4_socket_obj;
-
-
+#ifdef __cplusplus
+extern "C" {
 #endif 
+
+typedef struct __pyudt4_exception_obj {
+        PyObject_HEAD;
+        int       code; 
+        PyObject *message;
+} pyudt4_exception_obj;
+
+
+PyTypeObject *initpyudt4_exception_type(PyObject *module);
+
+#ifdef __cplusplus
+}
+#endif 
+
+#endif //__PY_UDT_EXCEPTION_H_
