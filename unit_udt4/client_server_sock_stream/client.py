@@ -7,15 +7,18 @@ import udt4
 print('__load__client')
 
 client = None
-
+mode   = None
 
 def create_client(host, port):
     print('create_client(%s, %s)' % (host, port))
 
     global client 
 
-    socket = udt4.socket(socklib.AF_INET, socklib.SOCK_STREAM,
-                         socklib.AI_PASSIVE)
+    socket = udt4.socket(
+            socklib.AF_INET, 
+           (socklib.SOCK_STREAM, socklib.SOCK_DGRAM)[mode == 'DGRAM'], 
+            socklib.AI_PASSIVE
+            ) 
     
     #
     # set sock options 
@@ -24,8 +27,8 @@ def create_client(host, port):
              (udt4.UDT_RCVBUF   , 64)
              ]
     
-    for opt in opts:
-        udt4.setsockopt(socket, opt[0], opt[1]) 
+    #for opt in opts:
+    #    udt4.setsockopt(socket, opt[0], opt[1]) 
    
     print('connecting client')
     try:
@@ -41,30 +44,40 @@ def create_client(host, port):
 
 def test0():
     print('client: test0')
-
-    size = struct.unpack('I', udt4.recv(client, 4))[0]
-    msg  = udt4.recv(client, size)
-
-    assert size == len(msg), 'message length does not match' 
-
+    
+    if mode == 'DGRAM':
+        dat = udt4.recvmsg(client, 4) 
+        msg = udt4.recvmsg(client, struct.unpack('I', dat)[0])
+    else:
+        dat = udt4.recv(client, 4)
+        msg = udt4.recv(client, struct.unpack('I', dat)[0])
+    
+    
     
 def test1():
     print('client: test1')
-
-    size = struct.unpack('I', udt4.recv(client, 4))[0]
-    msg  = udt4.recv(client, size) 
-
+    
+    if mode == 'DGRAM':
+        dat = udt4.recvmsg(client, 4)
+        msg = udt4.recvmsg(client, struct.unpack('I', dat)[0])
+    else:
+        dat = udt4.recv(client, 4)
+        msg = udt4.recv(client, struct.unpack('I', dat)[0])
+        
     print(
-        'test1: %i:%i %s' % (size, len(msg), msg)
+        'test1: %i %s' % (len(msg), msg)
             )
 
 
-def main(host, port):
+def main(settings):
+    global mode 
+    mode = settings['mode'] 
+
     udt4.startup() 
     
-    time.sleep(1) # just to wait for server
+    #time.sleep(1) # just to wait for server
     
-    if not create_client(host, port):
+    if not create_client(settings['host'], settings['port']):
         print('failed to create client')
         return 1
 

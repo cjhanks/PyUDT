@@ -8,7 +8,12 @@ udt4.startup()
 
 socket = udt4.socket(socklib.AF_INET, socklib.SOCK_STREAM, 0)
 
-udt4.connect(socket, '127.0.0.1', 3001)
+try:
+    udt4.connect(socket, '127.0.0.1', 3001)
+except RuntimeError as err:
+    print(err)
+    import sys
+    sys.exit(0)
 
 # recv message # 
 msg_len = struct.unpack('I', udt4.recv(socket, 4))[0]

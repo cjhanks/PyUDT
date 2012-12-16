@@ -3,13 +3,16 @@
 import os 
 
 #host    = ''
-host    = '127.0.0.1'
-port    = 3444 
+settings = {
+        'host'  :   '127.0.0.1',
+        'port'  :   3444,
+        'mode'  :   'DGRAM' 
+        }
 
 if os.fork():
     import server
-    server.main(host, port) 
+    server.main(settings) 
 else:
     import client
-    client.main(host, port) 
+    client.main(settings) 
 

@@ -6,15 +6,22 @@ import udt4
 print('__load__server')
 
 server = None
-
+mode   = None 
 
 def create_server(host, port):
     print('create_server(%s, %s)' % (host, port))
     
     global server 
     
-    socket = udt4.socket(socklib.AF_INET, socklib.SOCK_STREAM, 
-                         socklib.AI_PASSIVE) 
+    socket = udt4.socket(
+            socklib.AF_INET, 
+           (socklib.SOCK_STREAM, socklib.SOCK_DGRAM)[mode == 'DGRAM'], 
+            socklib.AI_PASSIVE
+            ) 
+    
+    print(
+            ('socklib.SOCK_STREAM', 'socklib.SOCK_DGRAM')[mode == 'DGRAM']
+            )
     
     #
     # set sock options 
@@ -44,8 +51,6 @@ def accept_client():
         )
     
     
-    sock.debug() 
-
     return sock
 
 
@@ -55,10 +60,14 @@ def test0(sock):
     print('server: test0')
 
     message = 'message in a bottle'
-
-    udt4.send(sock, struct.pack('I', len(message)), 4) 
-    udt4.send(sock, message, len(message))
     
+    if mode == 'DGRAM':
+        udt4.sendmsg(sock, struct.pack('I', len(message)), 4) 
+        udt4.sendmsg(sock, message, len(message))
+    else:
+        udt4.send(sock, struct.pack('I', len(message)), 4) 
+        udt4.send(sock, message, len(message))
+   
 
 def test1(sock):
     """ Send a basic message on a padded size, this is useful if you might be 
@@ -70,25 +79,31 @@ def test1(sock):
     pad = 64
     msg = 'words are only words except when they are not'
     
-    udt4.send(sock, struct.pack('I', pad), 4)
-    udt4.send(sock, msg, pad)
+    print(pad) 
+    if mode == 'DGRAM':
+        udt4.sendmsg(sock, struct.pack('I', pad), 4)
+        udt4.sendmsg(sock, msg, pad)
+    else:
+        udt4.send(sock, struct.pack('I', pad), 4)
+        udt4.send(sock, msg, pad)
 
 
 def test2(sock):
     print('server: test2')
 
 
-def main(host, port):
+def main(settings):
+    global mode 
+    mode = settings['mode'] 
+    
     udt4.startup() 
 
-    if not create_server('', port):
+    if not create_server('', settings['port']):
         print('failed to create_server')
         return 0
     else:
         print('server socket created successfully')
 
-    print('server_____')
-    server.debug()
     
     sock = accept_client() 
     
@@ -96,8 +111,7 @@ def main(host, port):
     test1(sock)
     test2(sock)
     
-    udt4.close(server) 
     udt4.close(sock) 
+    udt4.close(server) 
 
     udt4.cleanup() 
-    pass 

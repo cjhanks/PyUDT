@@ -55,9 +55,8 @@
 
 #define RETURN_UDT_RUNTIME_ERROR \
         do {\
-                PyErr_SetString(\
-                        PyExc_RuntimeError,\
-                        UDT::getlasterror().getErrorMessage()\
+                PyErr_SetObject(\
+                        PyExc_RuntimeError, build_pyudt4_exception()\
                         );\
                 \
                 return 0x0;\
@@ -68,6 +67,96 @@
 #ifdef __cplusplus
 extern "C" {
 #endif 
+
+/* UDT::EXCEPTION  ---------------------------------------------------------- */
+typedef struct __pyudt4_exception_obj {
+        PyObject_HEAD;          /*!< std macro          */
+        
+        int       code; 
+        PyObject *message;
+} pyudt4_exception_obj;
+
+
+static PyObject*
+pyudt4_exception_tp_str(PyObject *py_self)
+{
+        return ((pyudt4_exception_obj*) py_self)->message;
+}
+
+/*
+static PyObject*
+pyudt4_exception_tp_as_number(PyObject *py_self)
+{
+        return Py_BuildVale("i", 
+                        ((pyudt4_exception_obj*) py_self)->code
+                        );;
+}
+*/
+
+/**
+        TODO:
+        error code accessor method need (either by getattr OR tp_as_number 
+        */
+static PyTypeObject pyudt4_exception_type = {
+    PyObject_HEAD_INIT(NULL)
+    0,                                          /* ob_size              */
+    "UDTException",                             /* tp_name              */
+    sizeof(pyudt4_exception_obj),               /* tp_basicsize         */
+    0,                                          /* tp_itemsize          */
+    0,                                          /* tp_dealloc           */
+    0,                                          /* tp_print             */
+    0,                                          /* tp_getattr           */
+    0,                                          /* tp_setattr           */
+    0,                                          /* tp_compare           */
+    0,                                          /* tp_repr              */
+    0, //pyudt4_exception_tp_as_number,              /* tp_as_number         */
+    0,                                          /* tp_as_sequence       */
+    0,                                          /* tp_as_mapping        */
+    0,                                          /* tp_hash              */
+    0,                                          /* tp_call              */
+    pyudt4_exception_tp_str,                    /* tp_str               */
+    0,                                          /* tp_getattro          */
+    0,                                          /* tp_setattro          */
+    0,                                          /* tp_as_buffer         */
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,   /* tp_flags             */
+    "UDT4 Exception",                           /* tp_doc               */
+    0,                                          /* tp_traverse          */
+    0,                                          /* tp_clear             */
+    0,                                          /* tp_richcompare       */
+    0,                                          /* tp_weaklistoffset    */
+    0,                                          /* tp_iter              */
+    0,                                          /* tp_iternext          */
+    0,                                          /* tp_methods           */
+    0,                                          /* tp_members           */
+    0,                                          /* tp_getset            */
+    0,                                          /* tp_base              */
+    0,                                          /* tp_dict              */
+    0,                                          /* tp_descr_get         */
+    0,                                          /* tp_descr_set         */
+    0,                                          /* tp_dictoffset        */
+    //(initproc)pyudt4_socket_init,               /* tp_init              */
+    0,                                          /* tp_alloc             */
+    0,                                          /* tp_new               */
+};
+
+static PyObject* 
+build_pyudt4_exception() 
+{
+        pyudt4_exception_obj *obj = 
+                (pyudt4_exception_obj*)_PyObject_New(&pyudt4_exception_type);
+
+        if (0x0 == obj)
+                return 0x0;
+
+        obj->code    = UDT::getlasterror().getErrorCode();
+        obj->message = Py_BuildValue("s", 
+                                UDT::getlasterror().getErrorMessage()
+                                );
+        
+        UDT::getlasterror().clear(); 
+
+        return (PyObject*) obj;
+}
 
 /* UDT::UDTSOCKET  ---------------------------------------------------------- */
 static PyObject*
@@ -219,7 +308,7 @@ static PyTypeObject pyudt4_socket_type = {
     0,                                          /* tp_descr_get         */
     0,                                          /* tp_descr_set         */
     0,                                          /* tp_dictoffset        */
-    0,//(initproc)pyudt4_socket_init,               /* tp_init              */
+    //(initproc)pyudt4_socket_init,               /* tp_init              */
     0,                                          /* tp_alloc             */
     0,                                          /* tp_new               */
 };
@@ -437,7 +526,6 @@ pyudt4_connect(PyObject *py_self, PyObject *args)
         }
        
         sockaddr_in serv;
-        assert(sock->domain == AF_INET);
         serv.sin_family = sock->domain;
         serv.sin_port   = htons(port);
 
@@ -481,7 +569,7 @@ pyudt4_close(PyObject *py_self, PyObject *args)
         return Py_BuildValue("i", UDT::close(sock->sock));
 } 
 
-/*
+
 static PyObject*
 pyudt4_getpeername(PyObject *py_self, PyObject *args)
 {
@@ -499,7 +587,28 @@ pyudt4_getpeername(PyObject *py_self, PyObject *args)
                 sock = (pyudt4_socket_obj*) sock_obj;
         }
         
+        sockaddr_in client_stg;
+        int addr_len = sizeof(client_stg);
 
+        if (UDT::ERROR == UDT::getpeername(sock->sock, (sockaddr*) &client_stg,
+                                           &addr_len)) {
+                RETURN_UDT_RUNTIME_ERROR;
+        }
+
+        char client_host[NI_MAXHOST];
+        char client_srvc[NI_MAXSERV];
+
+        memset(client_host, '\0', sizeof(client_host));
+        memset(client_srvc, '\0', sizeof(client_srvc));
+
+        getnameinfo((sockaddr*) &client_stg, addr_len, 
+                    client_host, sizeof(client_host) , 
+                    client_srvc, sizeof(client_srvc) ,
+                    NI_NUMERICHOST|NI_NUMERICSERV);
+       
+        return Py_BuildValue(
+                        "si", client_host, ntohs(client_stg.sin_port)
+                        ); 
 } 
 
 
@@ -519,8 +628,31 @@ pyudt4_getsockname(PyObject *py_self, PyObject *args)
         } else {
                 sock = (pyudt4_socket_obj*) sock_obj;
         }
+        
+        sockaddr_in client_stg;
+        int addr_len = sizeof(client_stg);
+
+        if (UDT::ERROR == UDT::getsockname(sock->sock, (sockaddr*) &client_stg,
+                                           &addr_len)) {
+                RETURN_UDT_RUNTIME_ERROR;
+        }
+
+        char client_host[NI_MAXHOST];
+        char client_srvc[NI_MAXSERV];
+
+        memset(client_host, '\0', sizeof(client_host));
+        memset(client_srvc, '\0', sizeof(client_srvc));
+
+        getnameinfo((sockaddr*) &client_stg, addr_len, 
+                    client_host, sizeof(client_host) , 
+                    client_srvc, sizeof(client_srvc) ,
+                    NI_NUMERICHOST|NI_NUMERICSERV);
+       
+        return Py_BuildValue(
+                        "si", client_host, ntohs(client_stg.sin_port)
+                        );
 } 
-*/
+
 
 static PyObject*
 pyudt4_setsockopt(PyObject *py_self, PyObject *args)
@@ -800,15 +932,76 @@ pyudt4_send(PyObject *py_self, PyObject *args)
                 memset(buf, '\0', pref_len - buf_len);
                 
                 rc = UDT::send(sock->sock, buf, pref_len - buf_len, 0);
-                
-                if (UDT::ERROR == rc) 
-                        RETURN_UDT_RUNTIME_ERROR;
-                 
-                return Py_BuildValue("i", rc);
         } else {
-                return Py_BuildValue("i", UDT::send(sock->sock, buf, buf_len, 
-                                                    0));
+                rc = UDT::send(sock->sock, buf, buf_len, 0);
         }
+                
+        if (UDT::ERROR == rc)   
+                RETURN_UDT_RUNTIME_ERROR;
+
+        return Py_BuildValue("i", rc);
+} 
+
+
+static PyObject*
+pyudt4_sendmsg(PyObject *py_self, PyObject *args)
+{
+        int rc;
+
+        PyObject *sock_obj      = 0x0;
+        pyudt4_socket_obj *sock = 0x0;
+        
+        char *buf;
+        int   buf_len;  /* true buffer length    */
+        int   pref_len; /* passed in length size */
+        int   ttl = -1;
+        PyObject *in_order = Py_False;
+
+        if (!PyArg_ParseTuple(args, "Os#i|iO", &sock_obj, &buf, &buf_len, 
+                              &pref_len, &ttl, &in_order)) {
+                PyErr_SetString(
+                        PyExc_TypeError,
+                        "arguments: [UDTSOCKET] [BUFFER] [BUFFER LENGTH]"
+                        );
+                
+                return 0x0;
+        } else {
+                if ((pref_len - buf_len) > buf_len) {
+                        PyErr_SetString(
+                                PyExc_ValueError,
+                                "preferred length must not double real "
+                                "buffer length"
+                                );
+
+                        return 0x0;
+                }
+
+                sock = (pyudt4_socket_obj*) sock_obj;
+        }
+        
+        if (pref_len > buf_len) {
+                /*
+                   udp dgram packets must be sent in a single send or those
+                   with in_order = false
+                   */
+                char *new_buf = (char*)PyMem_Malloc(sizeof(char) * pref_len);
+                
+                memcpy(new_buf, buf , buf_len );
+                memset(&new_buf[buf_len], '\0', pref_len - buf_len);
+                        
+                rc = UDT::sendmsg(sock->sock, new_buf, pref_len, ttl, 
+                                  in_order != Py_False);
+
+                PyMem_Free(new_buf);
+        } else {
+                rc = UDT::sendmsg(sock->sock, buf, buf_len, ttl, 
+                                  in_order != Py_False);
+        }
+        
+        if (UDT::ERROR == rc) 
+                RETURN_UDT_RUNTIME_ERROR;
+
+        return Py_BuildValue("i", rc);
 } 
 
 
@@ -860,45 +1053,56 @@ pyudt4_recv(PyObject *py_self, PyObject *args)
         return ret;
 } 
 
-/*
-static PyObject*
-pyudt4_sendmsg(PyObject *py_self, PyObject *args)
-{
-        PyObject *sock_obj      = 0x0;
-        pyudt4_socket_obj *sock = 0x0;
-
-        if (!PyArg_ParseTuple(args, "O", &sock_obj)) {
-                PyErr_SetString(
-                        PyExc_TypeError,
-                        "arguments: [UDTSOCKET]"
-                        );
-                
-                return Py_BuildValue("i", 1);
-        } else {
-                sock = (pyudt4_socket_obj*) sock_obj;
-        }
-} 
-
 
 static PyObject*
 pyudt4_recvmsg(PyObject *py_self, PyObject *args)
 {
+        int rc; 
+
         PyObject *sock_obj      = 0x0;
         pyudt4_socket_obj *sock = 0x0;
+        
+        char *buf;
+        int   buf_len;
 
-        if (!PyArg_ParseTuple(args, "O", &sock_obj)) {
+        if (!PyArg_ParseTuple(args, "Oi", &sock_obj, &buf_len)) {
                 PyErr_SetString(
                         PyExc_TypeError,
-                        "arguments: [UDTSOCKET]"
+                        "arguments: [UDTSOCKET] [INT]" 
                         );
                 
-                return Py_BuildValue("i", 1);
+                return 0x0;
         } else {
                 sock = (pyudt4_socket_obj*) sock_obj;
         }
+
+        buf = (char*)PyMem_Malloc(sizeof(char) * buf_len);
+
+        if (0x0 == buf) {
+                PyErr_SetString(
+                        PyExc_RuntimeError, 
+                        "memory allocation error"
+                        );
+
+                return 0x0;
+        }
+
+        memset(buf, '\0', buf_len);
+
+        rc = UDT::recvmsg(sock->sock, buf, buf_len);
+
+        if (UDT::ERROR == rc) {
+                PyMem_Free(buf);
+                RETURN_UDT_RUNTIME_ERROR;
+        }
+
+        PyObject *ret = Py_BuildValue("s#", buf, buf_len);
+        PyMem_Free(buf);
+
+        return ret;
 } 
 
-
+/*
 static PyObject*
 pyudt4_sendfile(PyObject *py_self, PyObject *args)
 {
@@ -987,7 +1191,6 @@ static PyMethodDef pyudt4_module_methods[] = {
                 METH_VARARGS,
                 ""
         },
-        /*
         {
                 "getpeername",
                 (PyCFunction)pyudt4_getpeername,
@@ -1000,7 +1203,6 @@ static PyMethodDef pyudt4_module_methods[] = {
                 METH_VARARGS,
                 ""
         },
-        */
         {
                 "setsockopt",
                 (PyCFunction)pyudt4_setsockopt,
@@ -1025,19 +1227,19 @@ static PyMethodDef pyudt4_module_methods[] = {
                 METH_VARARGS,
                 ""
         },
-        /*
         {
                 "sendmsg",
-                (PyCFunction)pyudt4_accept,
+                (PyCFunction)pyudt4_sendmsg,
                 METH_VARARGS,
                 ""
         },
         {
                 "recvmsg",
-                (PyCFunction)pyudt4_accept,
+                (PyCFunction)pyudt4_recvmsg,
                 METH_VARARGS,
                 ""
         },
+        /*
         {
                 "sendfile",
                 (PyCFunction)pyudt4_accept,
@@ -1064,7 +1266,10 @@ initudt4()
         PyObject *m;
         
         /* init module */
-        if (PyType_Ready(&pyudt4_socket_type) < 0)
+        if (
+            PyType_Ready(&pyudt4_socket_type   ) < 0 ||
+            PyType_Ready(&pyudt4_exception_type) < 0 
+            )
                 return;
         
         if ((m = Py_InitModule3("udt4", pyudt4_module_methods, 
@@ -1072,12 +1277,19 @@ initudt4()
                                 )) == 0x0)
                 return;
         
+        /* add exception */
+        pyudt4_exception_type.tp_new = PyType_GenericNew;
+        Py_INCREF(&pyudt4_exception_type);
+        PyModule_AddObject(
+                        m, "UDTEXCEPTION", (PyObject*) &pyudt4_exception_type
+                        );
+
         /* add socket objects */
         pyudt4_socket_type.tp_new = PyType_GenericNew;
         Py_INCREF(&pyudt4_socket_type);
         PyModule_AddObject(m, "UDTSOCKET", (PyObject*) &pyudt4_socket_type);
 
-
+        /* sockoption enums */
         if (
             PyModule_AddIntConstant(m, "UDT_MSS"       , UDT_MSS       ) < 0 ||
             PyModule_AddIntConstant(m, "UDT_SNDSYN"    , UDT_SNDSYN    ) < 0 ||
@@ -1099,6 +1311,85 @@ initudt4()
             PyModule_AddIntConstant(m, "UDT_MAXBW"     , UDT_MAXBW     ) < 0 
            ) {
                 return;
+        }
+        
+        /* exception codes */
+        using namespace UDT;
+        if (
+            PyModule_AddIntConstant(m, "SUCCESS", 
+                                ERRORINFO::SUCCESS     ) < 0 ||  
+            PyModule_AddIntConstant(m, "ECONNSETUP", 
+                                ERRORINFO::ECONNSETUP  ) < 0 || 
+            PyModule_AddIntConstant(m, "ENOSERVER" ,       
+                                ERRORINFO::ENOSERVER   ) < 0 || 
+            PyModule_AddIntConstant(m, "ECONNREJ",       
+                                ERRORINFO::ECONNREJ    ) < 0 || 
+            PyModule_AddIntConstant(m, "ESOCKFAIL",       
+                                ERRORINFO::ESOCKFAIL   ) < 0 || 
+            PyModule_AddIntConstant(m, "ESECFAIL",       
+                                ERRORINFO::ESECFAIL    ) < 0 || 
+            PyModule_AddIntConstant(m, "ECONNFAIL",       
+                                ERRORINFO::ECONNFAIL   ) < 0 || 
+            PyModule_AddIntConstant(m, "ECONNLOST",       
+                                ERRORINFO::ECONNLOST   ) < 0 || 
+            PyModule_AddIntConstant(m, "ENOCONN",       
+                                ERRORINFO::ENOCONN     ) < 0 || 
+            PyModule_AddIntConstant(m, "ERESOURCE",       
+                                ERRORINFO::ERESOURCE   ) < 0 || 
+            PyModule_AddIntConstant(m, "ETHREAD",       
+                                ERRORINFO::ETHREAD     ) < 0 || 
+            PyModule_AddIntConstant(m, "ENOBUF",       
+                                ERRORINFO::ENOBUF      ) < 0 || 
+            PyModule_AddIntConstant(m, "EFILE",       
+                                ERRORINFO::EFILE       ) < 0 || 
+            PyModule_AddIntConstant(m, "EINVRDOFF",       
+                                ERRORINFO::EINVRDOFF   ) < 0 || 
+            PyModule_AddIntConstant(m, "ERDPERM",       
+                                ERRORINFO::ERDPERM     ) < 0 || 
+            PyModule_AddIntConstant(m, "EINVWROFF",       
+                                ERRORINFO::EINVWROFF   ) < 0 || 
+            PyModule_AddIntConstant(m, "EWRPERM",       
+                                ERRORINFO::EWRPERM     ) < 0 || 
+            PyModule_AddIntConstant(m, "EINVOP",       
+                                ERRORINFO::EINVOP      ) < 0 || 
+            PyModule_AddIntConstant(m, "EBOUNDSOCK",       
+                                ERRORINFO::EBOUNDSOCK  ) < 0 || 
+            PyModule_AddIntConstant(m, "ECONNSOCK",       
+                                ERRORINFO::ECONNSOCK   ) < 0 || 
+            PyModule_AddIntConstant(m, "EINVPARAM",       
+                                ERRORINFO::EINVPARAM   ) < 0 || 
+            PyModule_AddIntConstant(m, "EINVSOCK",      
+                                ERRORINFO::EINVSOCK    ) < 0 || 
+            PyModule_AddIntConstant(m, "EUNBOUNDSOCK", 
+                                ERRORINFO::EUNBOUNDSOCK) < 0 || 
+            PyModule_AddIntConstant(m, "ENOLISTEN",       
+                                ERRORINFO::ENOLISTEN   ) < 0 || 
+            PyModule_AddIntConstant(m, "ERDVNOSERV",       
+                                ERRORINFO::ERDVNOSERV  ) < 0 || 
+            PyModule_AddIntConstant(m, "ERDVUNBOUND",       
+                                ERRORINFO::ERDVUNBOUND ) < 0 || 
+            PyModule_AddIntConstant(m, "ESTREAMILL",       
+                                ERRORINFO::ESTREAMILL  ) < 0 || 
+            PyModule_AddIntConstant(m, "EDGRAMILL",       
+                                ERRORINFO::EDGRAMILL   ) < 0 || 
+            PyModule_AddIntConstant(m, "EDUPLISTEN",      
+                                ERRORINFO::EDUPLISTEN  ) < 0 || 
+            PyModule_AddIntConstant(m, "ELARGEMSG",       
+                                ERRORINFO::ELARGEMSG   ) < 0 || 
+            PyModule_AddIntConstant(m, "EINVPOLLID",       
+                                ERRORINFO::EINVPOLLID  ) < 0 || 
+            PyModule_AddIntConstant(m, "EASYNCFAIL",       
+                                ERRORINFO::EASYNCFAIL  ) < 0 || 
+            PyModule_AddIntConstant(m, "EASYNCSND",       
+                                ERRORINFO::EASYNCSND   ) < 0 || 
+            PyModule_AddIntConstant(m, "EASYNCRCV",       
+                                ERRORINFO::EASYNCRCV   ) < 0 || 
+            PyModule_AddIntConstant(m, "EPEERERR",       
+                                ERRORINFO::EPEERERR    ) < 0 || 
+            PyModule_AddIntConstant(m, "EUNKNOWN",             
+                                ERRORINFO::EUNKNOWN    ) < 0 
+           ) {
+                return ;
         }
 }
 
