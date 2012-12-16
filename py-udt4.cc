@@ -110,8 +110,75 @@ static PyMethodDef pyudt4_socket_methods[] = {
         },
         { 0x0 }
 };
+
+
+static PyObject*
+pyudt4_socket_get_domain(PyObject *py_self)
+{
+        return Py_BuildValue("i",
+                        ((pyudt4_socket_obj*) py_self)->domain
+                        );
+}
+
+
+static PyObject*
+pyudt4_socket_get_type(PyObject *py_self)
+{
+        return Py_BuildValue("i",
+                        ((pyudt4_socket_obj*) py_self)->type
+                        );
+}
+
+
+static PyObject*
+pyudt4_socket_get_protocol(PyObject *py_self)
+{
+        return Py_BuildValue("i",
+                        ((pyudt4_socket_obj*) py_self)->protocol
+                        );
+}
+
+
+static PyObject*
+pyudt4_socket_get_udtsocket(PyObject *py_self)
+{
+        return Py_BuildValue("i",
+                        ((pyudt4_socket_obj*) py_self)->sock
+                        );
+}
+        
         
 static PyGetSetDef  pyudt4_socket_getset[] = {
+        {
+                (char*) "family",
+                (getter) pyudt4_socket_get_domain,
+                (setter) 0x0,
+                (char*) "address domain"
+        }, 
+        {       /* intential duplicate */
+                (char*) "domain",
+                (getter) pyudt4_socket_get_domain,
+                (setter) 0x0,
+                (char*) "address domain"
+        },
+        {
+                (char*) "type",
+                (getter) pyudt4_socket_get_type,
+                (setter) 0x0,
+                (char*) "address type"
+        },
+        {
+                (char*) "protocol",
+                (getter) pyudt4_socket_get_protocol,
+                (setter) 0x0,
+                (char*) "address protocol"
+        }, 
+        {
+                (char*) "udtsocket",
+                (getter) pyudt4_socket_get_udtsocket,
+                (setter) 0x0,
+                (char*) "underlying udtsocket"
+        }, 
         { 0x0 }
 };
 
@@ -704,7 +771,7 @@ pyudt4_send(PyObject *py_self, PyObject *args)
                               &pref_len)) {
                 PyErr_SetString(
                         PyExc_TypeError,
-                        "arguments: [UDTSOCKET]"
+                        "arguments: [UDTSOCKET] [BUFFER] [BUFFER LENGTH]"
                         );
                 
                 return 0x0;
@@ -767,7 +834,7 @@ pyudt4_recv(PyObject *py_self, PyObject *args)
                 sock = (pyudt4_socket_obj*) sock_obj;
         }
 
-        buf = (char*)malloc(sizeof(char) * buf_len);
+        buf = (char*)PyMem_Malloc(sizeof(char) * buf_len);
 
         if (0x0 == buf) {
                 PyErr_SetString(
@@ -783,12 +850,12 @@ pyudt4_recv(PyObject *py_self, PyObject *args)
         rc = UDT::recv(sock->sock, buf, buf_len, 0);
 
         if (UDT::ERROR == rc) {
-                free(buf);
+                PyMem_Free(buf);
                 RETURN_UDT_RUNTIME_ERROR;
         }
 
         PyObject *ret = Py_BuildValue("s#", buf, buf_len);
-        free(buf);
+        PyMem_Free(buf);
 
         return ret;
 } 
