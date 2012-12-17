@@ -603,19 +603,19 @@ pyudt4_getsockopt(PyObject *py_self, PyObject *args)
         case UDT_STATE:
         case UDT_EVENT:
         case UDT_SNDDATA:
-        case UDT_RCVDATA:
+        case UDT_RCVDATA: {
                 int optval;
                 len = sizeof(optval);
-
+                
                 if (UDT::ERROR == (rc = UDT::getsockopt(sock->sock, 0, optname,
                                                         &optval, &len))) {
-                        RETURN_UDT_RUNTIME_ERROR;
+                        RETURN_UDT_RUNTIME_ERROR; 
                 } else {
                         return Py_BuildValue(
                                         "i", optval
                                         );
-                }
-                break;
+                } 
+        }  
 
         default: {
                 PyErr_SetString(
@@ -1066,6 +1066,8 @@ initudt4()
         pyudt4_exception_type = initpyudt4_exception_type(m);
         pyudt4_socket_type    = initpyudt4_socket_type(m);
         pyudt4_epoll_type     = initpyudt4_epoll_type(m, pyudt4_exception_type);
+        
+        assert(0x0 != pyudt4_exception_type);
 
         /* sockoption enums */
         if (
@@ -1087,12 +1089,28 @@ initudt4()
             PyModule_AddIntConstant(m, "UDT_RCVTIMEO"  , UDT_RCVTIMEO  ) < 0 ||
             PyModule_AddIntConstant(m, "UDT_REUSEADDR" , UDT_REUSEADDR ) < 0 ||
             PyModule_AddIntConstant(m, "UDT_MAXBW"     , UDT_MAXBW     ) < 0 ||
+
             /* read only's */
             PyModule_AddIntConstant(m, "UDT_STATE"     , UDT_STATE     ) < 0 ||
             PyModule_AddIntConstant(m, "UDT_EVENT"     , UDT_EVENT     ) < 0 ||
             PyModule_AddIntConstant(m, "UDT_SNDDATA"   , UDT_SNDDATA   ) < 0 ||
             PyModule_AddIntConstant(m, "UDT_RCVDATE"   , UDT_RCVDATA   ) < 0 
            ) {
+                return;
+        }
+
+        /* UDTSTATUS */
+        if (
+            PyModule_AddIntConstant(m, "UDTSTATUS_INIT"      , INIT      ) < 0 ||
+            PyModule_AddIntConstant(m, "UDTSTATUS_OPENED"    , OPENED    ) < 0 ||
+            PyModule_AddIntConstant(m, "UDTSTATUS_LISTENING" , LISTENING ) < 0 ||
+            PyModule_AddIntConstant(m, "UDTSTATUS_CONNECTED" , CONNECTED ) < 0 ||
+            PyModule_AddIntConstant(m, "UDTSTATUS_CONNECTING", CONNECTING) < 0 ||
+            PyModule_AddIntConstant(m, "UDTSTATUS_BROKEN"    , BROKEN    ) < 0 ||
+            PyModule_AddIntConstant(m, "UDTSTATUS_CLOSING"   , CLOSING   ) < 0 ||
+            PyModule_AddIntConstant(m, "UDTSTATUS_CLOSED"    , CLOSED    ) < 0 ||
+            PyModule_AddIntConstant(m, "UDTSTATUS_NONEXIST"  , NONEXIST  ) < 0 
+            ) {
                 return;
         }
         
