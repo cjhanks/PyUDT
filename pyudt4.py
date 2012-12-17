@@ -24,17 +24,17 @@ class UdtSocket(object):
     def __init__(self, family = socklib.AF_INET, type = socklib.SOCK_STREAM,
                  protocol = 0, _sock = None):
         """
-        @param  family      UDT requires this family to be AF_INET 
-        @type   family      int() 
+        :param  family:     UDT requires this family to be AF_INET 
+        :type   family:     int() 
 
-        @param  type        SOCK_STREAM or SOCK_DGRAM 
-        @type   type        int() 
+        :param  type:       SOCK_STREAM or SOCK_DGRAM 
+        :type   type:       int() 
         
-        @param  protocol    AI_PASSIVE or int(0) are tested working.
-        @type   protocol    int() 
+        :param  protocol:   AI_PASSIVE or int(0) are tested working.
+        :type   protocol:   int() 
         
-        @param  _sock       Internally used to implement a dup()  
-        @type   _sock       UdtSocket() 
+        :param  _sock:      Internally used to implement a dup()  
+        :type   _sock:      UdtSocket() 
 
         """
         if _sock != None:
@@ -96,8 +96,8 @@ class UdtSocket(object):
         """
         Binds port to device associted with address and specific port.
 
-        @param  address device ip port pair  
-        @type   address tuple( str(), int() )
+        :param  address:    device ip port pair  
+        :type   address:    tuple( str(), int() )
         """
         udt4.bind(self.__sock, str(address[0]), int(addres[1]))
         
@@ -115,8 +115,8 @@ class UdtSocket(object):
         """
         Connects local socket to specific host port pair
 
-        @param  address Host:Port pair
-        @type   address tuple( str(), int() ) 
+        :param  address:    Host:Port pair
+        :type   address:    tuple( str(), int() ) 
         """
         udt4.connect(self.__sock, address[0], address[1])
 
@@ -145,8 +145,8 @@ class UdtSocket(object):
     def fileno(self, udt_fileno = False):
         # TODO: Find out how to find underlying UDP fileno from UDT fileno in lib
         """
-        @param  udt_fileno  Return udt fileno instead of udp?
-        @type   bool() 
+        :param  udt_fileno: Return udt fileno instead of udp?
+        :type   udt_fileno: bool() 
         
         Return the underlying fileno of the socket.  Since UDT is actually a 
         library wrapper for UDP the underlying socket has two id's.  The udt 
@@ -179,8 +179,8 @@ class UdtSocket(object):
 
     def getsockopt(self, option):
         """
-        @param  option  Intrinsic class constant ie: pyudt.UDT_SNDBUF
-        @type   option  int() 
+        :param  option  Intrinsic class constant ie: pyudt.UDT_SNDBUF
+        :type   option  int() 
 
         @return Value - return type is variable dependent on specified option,
                         can be bool(), int(), long(), or tuple() (for linger) 
@@ -203,8 +203,8 @@ class UdtSocket(object):
         """
         Set socket listen count 
 
-        @param  backlog Backlog count
-        @type   backlog int() 
+        :param  backlog Backlog count
+        :type   backlog int() 
         """
         udt4.listen(self.__sock, backlog)
 
@@ -220,11 +220,11 @@ class UdtSocket(object):
 
     def sendall(self, data, flags = 0):
         """
-        @param  data    String buffered data
-        @type   data    str() 
+        :param  data    String buffered data
+        :type   data    str() 
         
-        @param  flags   Ignored
-        @type   flags   int() 
+        :param  flags   Ignored
+        :type   flags   int() 
 
         This function exists for interface compatibility only, it's unclear in
         the Python socket documentation what benefit this has since the data 
@@ -235,12 +235,12 @@ class UdtSocket(object):
 
     def setblocking(self, flag, flag_recv = None):
         """
-        @param  flag        True or False
-        @type   flag        bool() 
+        :param  flag        True or False
+        :type   flag        bool() 
 
-        @param  flag_recv   Differentiate between blocking modes on send/receive
+        :param  flag_recv   Differentiate between blocking modes on send/receive
                             and set receive block mode to this value.
-        @type   flag_recv   bool() 
+        :type   flag_recv   bool() 
 
         All duplex settings in UDT make send and receive are differentiable
           ie: a socket can block send and non-block recv. 
@@ -260,11 +260,11 @@ class UdtSocket(object):
 
     def setsockopt(self, option, value):
         """
-        @param  option  Intrinsic class constant ie: pyudt4.UDT_RCVBUF
-        @type   option  int() 
+        :param  option  Intrinsic class constant ie: pyudt4.UDT_RCVBUF
+        :type   option  int() 
 
-        @param  value   Variable type value.
-        @type   value   bool(), int(), long(), or tuple() 
+        :param  value   Variable type value.
+        :type   value   bool(), int(), long(), or tuple() 
 
         Sets a socket option to the specified type.
         """
@@ -273,11 +273,11 @@ class UdtSocket(object):
     
     def settimeout(self, timeo, timeo_recv = None):
         """
-        @param  timeo       h
-        @type   timeo       int() 
+        :param  timeo       h
+        :type   timeo       int() 
 
-        @param  timeo_recv  h
-        @type   timeo_recv  int() 
+        :param  timeo_recv  h
+        :type   timeo_recv  int() 
         
         Please read documentation in setblocking().
         """
@@ -340,14 +340,14 @@ class UdtSocket(object):
         In non-blocking mode this will raise an exception, in blocking 
         mode (default) the call will wait on freed buffer space.
 
-        @param  data    Data to be written
-        @type   data    str() 
+        :param  data    Data to be written
+        :type   data    str() 
 
-        @param  padding Set a specified size the data should be written onto.
+        :param  padding Set a specified size the data should be written onto.
                         eg: len(data) => 45 padding = 64, data would be sent as
                         |45 bytes data|19 byte bzero| 
 
-        @type   padding int()
+        :type   padding int()
         """
         if None == padding:
             return udt4.send(self.__sock, data)
@@ -367,21 +367,21 @@ class UdtSocket(object):
         In non-blocking mode this will raise an exception, in blocking 
         mode (default) the call will wait on freed buffer space.
 
-        @param  data    Data to be written
-        @type   data    str() 
+        :param  data    Data to be written
+        :type   data    str() 
 
-        @param  padding Set a specified size the data should be written onto.
+        :param  padding Set a specified size the data should be written onto.
                         eg: len(data) => 45 padding = 64, data would be sent as
                         |45 bytes data|19 byte bzero| 
-        @type   padding int()
+        :type   padding int()
 
-        @param  ttl     Time to live for the message in ms : -1 is infinite 
+        :param  ttl     Time to live for the message in ms : -1 is infinite 
                         ie: garuanteed arrival
-        @type   ttl     int()
+        :type   ttl     int()
 
-        @param  inorder Guarantee UDP messages will be received in the order 
+        :param  inorder Guarantee UDP messages will be received in the order 
                         they were sent.
-        @type   inorder bool() 
+        :type   inorder bool() 
         """ 
         if None == padding:
             return udt4.sendmsg(self.__sock, data)
