@@ -106,7 +106,7 @@ pyudt4_epoll_add_usock(pyudt4_epoll_obj *self, PyObject *args)
         }
         
         /* increase the reft for each mapper */
-        if (0x0 == flag || flag & 0x2) {
+        if (0x0 == flag || flag & 0x1) {
                 Py_XINCREF(sock);
                 self->readfds.insert(std::make_pair(sock->sock, sock));
         }
@@ -244,7 +244,7 @@ pyudt4_epoll_wait(pyudt4_epoll_obj *self, PyObject *args)
         };
         
         int rc;
-
+        
         Py_BEGIN_ALLOW_THREADS;
         rc = UDT::epoll_wait(self->eid,
                         do_uread  == Py_True ? &usock.read  : 0x0,
@@ -266,28 +266,23 @@ pyudt4_epoll_wait(pyudt4_epoll_obj *self, PyObject *args)
         uset = {
                 PyFrozenSet_New(0x0),
                 PyFrozenSet_New(0x0)
-                //do_uread  == Py_True ? PyFrozenSet_New(0x0) : 0x0, 
-                //do_uwrite == Py_True ? PyFrozenSet_New(0x0) : 0x0, 
         }, 
         sset = {
                 PyFrozenSet_New(0x0),
                 PyFrozenSet_New(0x0)
-                //do_sread  == Py_True ? PyFrozenSet_New(0x0) : 0x0, 
-                //do_swrite == Py_True ? PyFrozenSet_New(0x0) : 0x0, 
         };
+
         
         /* UDTSOCKET sets */
         for (std::set<UDTSOCKET>::iterator i = usock.read.begin();
              i != usock.read.end(); ++i) {
-                fprintf(stderr, "i\n");
                 pyudt4_socket_obj *sock = self->readfds[*i];
                 Py_XINCREF(sock);
                 PySet_Add(uset.read , (PyObject*) sock); 
         }
         
-        for (std::set<UDTSOCKET>::iterator i = usock.read.begin();
-             i != usock.read.end(); ++i) {
-                fprintf(stderr, "j\n");
+        for (std::set<UDTSOCKET>::iterator i = usock.write.begin();
+             i != usock.write.end(); ++i) {
                 pyudt4_socket_obj *sock = self->writefds[*i];
                 Py_XINCREF(sock);
                 PySet_Add(uset.write, (PyObject*) sock); 
@@ -301,9 +296,9 @@ pyudt4_epoll_wait(pyudt4_epoll_obj *self, PyObject *args)
         
         for (std::set<SYSSOCKET>::iterator i = ssock.write.begin();
              i != ssock.write.end(); ++i) {
-                fprintf(stderr, "l\n");
                 PySet_Add(sset.write,  Py_BuildValue("i", *i));
         }
+
 
         return Py_BuildValue("OOOO", uset.read, uset.write, 
                              sset.read, sset.write);

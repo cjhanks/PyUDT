@@ -576,7 +576,8 @@ pyudt4_getsockopt(PyObject *py_self, PyObject *args)
         case UDT_RENDEZVOUS:
         case UDT_REUSEADDR : {
                 bool optval;
-                
+                len = sizeof(optval);
+
                 if (UDT::ERROR == (rc = UDT::getsockopt(sock->sock, 0, optname,
                                                         &optval, &len))) {
                         RETURN_UDT_RUNTIME_ERROR;
@@ -587,6 +588,7 @@ pyudt4_getsockopt(PyObject *py_self, PyObject *args)
 
         case UDT_LINGER: {
                 linger optval;
+                len = sizeof(optval);
 
                 if (UDT::ERROR == (rc = UDT::getsockopt(sock->sock, 0, optname,
                                                         &optval, &len))) {
@@ -597,6 +599,23 @@ pyudt4_getsockopt(PyObject *py_self, PyObject *args)
                                         );
                 }
         }
+
+        case UDT_STATE:
+        case UDT_EVENT:
+        case UDT_SNDDATA:
+        case UDT_RCVDATA:
+                int optval;
+                len = sizeof(optval);
+
+                if (UDT::ERROR == (rc = UDT::getsockopt(sock->sock, 0, optname,
+                                                        &optval, &len))) {
+                        RETURN_UDT_RUNTIME_ERROR;
+                } else {
+                        return Py_BuildValue(
+                                        "i", optval
+                                        );
+                }
+                break;
 
         default: {
                 PyErr_SetString(
@@ -1067,7 +1086,12 @@ initudt4()
             PyModule_AddIntConstant(m, "UDT_SNDTIMEO"  , UDT_SNDTIMEO  ) < 0 ||
             PyModule_AddIntConstant(m, "UDT_RCVTIMEO"  , UDT_RCVTIMEO  ) < 0 ||
             PyModule_AddIntConstant(m, "UDT_REUSEADDR" , UDT_REUSEADDR ) < 0 ||
-            PyModule_AddIntConstant(m, "UDT_MAXBW"     , UDT_MAXBW     ) < 0 
+            PyModule_AddIntConstant(m, "UDT_MAXBW"     , UDT_MAXBW     ) < 0 ||
+            /* read only's */
+            PyModule_AddIntConstant(m, "UDT_STATE"     , UDT_STATE     ) < 0 ||
+            PyModule_AddIntConstant(m, "UDT_EVENT"     , UDT_EVENT     ) < 0 ||
+            PyModule_AddIntConstant(m, "UDT_SNDDATA"   , UDT_SNDDATA   ) < 0 ||
+            PyModule_AddIntConstant(m, "UDT_RCVDATE"   , UDT_RCVDATA   ) < 0 
            ) {
                 return;
         }
