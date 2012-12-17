@@ -154,9 +154,8 @@ pyudt4_bind(PyObject *py_self, PyObject *args)
                 return 0x0;
         }
 
-        sock_addr.sin_family      = sock->domain;
-        sock_addr.sin_port        = htons(port);
-        //sock_addr.sin_addr.s_addr = INADDR_ANY; 
+        sock_addr.sin_family = sock->domain;
+        sock_addr.sin_port   = htons(port);
 
         memset(&sock_addr.sin_zero, '\0', sizeof(sock_addr.sin_zero));
 
@@ -889,19 +888,40 @@ static PyMethodDef pyudt4_module_methods[] = {
                 "socket",
                 (PyCFunction)pyudt4_socket,
                 METH_VARARGS,
-                ""
+                "Initialize a socket (domain, type, protocol)           \n"
+                "@param domain          socket domain/family            \n"
+                "@type  domain          int()                           \n"
+                "\n"
+                "@param type            socket type                     \n"
+                "@type  type            int()                           \n"
+                "\n"
+                "@param protocol        socket protocol                 \n"
+                "@type  type            nt()                            \n"
+                "\n"
+                "@return UDTSOCKET class instance"
+
         },
         {
                 "bind",
                 (PyCFunction)pyudt4_bind,
                 METH_VARARGS,
-                ""
+                "Bind socket to address (host, port)                    \n"
+                "@param host            local host ip to bind to        \n"
+                "@type  host            str()                           \n"
+                "\n"
+                "@param port            local isten port to bind to     \n"
+                "@type  port            int()                           \n"
+                "\n"
         },
         {
                 "listen",
                 (PyCFunction)pyudt4_listen,
                 METH_VARARGS,
-                ""
+                "Mark socket as passive to accept (backlog)             \n"
+                "@param backlog         maximum size of queue           \n"
+                "@type  backlog         int()                           \n"
+                "\n"
+                "@return 0 for success                                    "
         },
         {
                 "accept",
