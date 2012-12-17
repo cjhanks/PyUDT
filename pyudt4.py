@@ -362,9 +362,9 @@ class UdtSocket(object):
         :type   padding int()
         """
         if None == padding:
-            return udt4.send(self.__sock, data)
+            return udt4.send(self.__sock, data, len(data))
         else:
-            return udt4.send(self.__sock, data, padding)
+            return udt4.send(self.__sock, data, padding  )
 
     
     def sendto(self, data, padding = None):

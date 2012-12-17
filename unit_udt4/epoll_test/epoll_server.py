@@ -2,27 +2,47 @@
 
 from   threading import Thread 
 import pyudt4 
+import time 
 
 class EpollThread(Thread):
     def __init__(self):
         Thread.__init__(self)
         self.domain  = True
         self.__epoll = pyudt4.epoll() 
+        self.__socks = []
 
 
     def run(self):
+        from datetime import datetime 
+
         print('starting epoll thread') 
         
+        start = datetime.utcnow() 
         while True:
-            print('__iterate__')
+            print((datetime.utcnow() - start).total_seconds())
         
-            print( 
-                self.__epoll.wait(False, False, 2000)
-                )
-            
+            returns = self.__epoll.wait(True, True, 2000)
+            print(returns) 
+
+            for i in returns[0]:
+                print(i)
+                print(pyudt4.recv(i, 4096)[0:3])
+   
+
+    def add_usock(self, sock):
+        print('add sock: %s' % sock)
+        pyudt4.setsockopt(sock, pyudt4.UDT_RCVTIMEO, 8000)
+        pyudt4.setsockopt(sock, pyudt4.UDT_SNDTIMEO, 8000)
+        self.__epoll.add_usock(sock, 0x1 | 0x8)
+        self.__socks.append(sock) 
+
     
-    def add_rsock(self, sock):
-        self.__epoll.add_usock(sock)
+    def check_socks(self):
+        for sock in self.__socks:
+            try:
+                print(pyudt4.getsockopt(sock, pyudt4.UDT_STATE))
+            except RuntimeError as err:
+                print('Error: %s' % err)
 
 
 def main(settings):
@@ -42,14 +62,12 @@ def main(settings):
     server.listen(1024) 
 
     for i in range(0, settings['count']):
-        print('in range...')
         sock, host = server.accept() 
-        print(host) 
-        #epoll.add_usock(
-        #        server.accept()[0]
-        #        )
         epoll.add_usock(sock)
     
+    while True:
+        time.sleep(4) 
+        epoll.check_socks() 
     #epoll = pyudt4.epoll()  
     
 
