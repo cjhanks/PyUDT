@@ -58,6 +58,7 @@ pyudt4_exception_tp_str(PyObject *py_self)
 static PyObject*
 pyudt4_exception_init(PyTypeObject *type) 
 {
+        fprintf(stderr, "INIT EXCEPTION\n");
         pyudt4_exception_obj *self =
                 (pyudt4_exception_obj*) type->tp_alloc(type, 0);
 
@@ -65,7 +66,6 @@ pyudt4_exception_init(PyTypeObject *type)
         self->message = Py_BuildValue("s", 
                                 UDT::getlasterror().getErrorMessage()
                                 );
-        
         UDT::getlasterror().clear();
 
         return (PyObject*) self;

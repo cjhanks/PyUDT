@@ -39,9 +39,12 @@ class EpollThread(Thread):
     
     def check_socks(self):
         for sock in self.__socks:
+            print(sock)
+            sock.debug() 
             try:
                 print(pyudt4.getsockopt(sock, pyudt4.UDT_STATE))
-            except RuntimeError as err:
+            except Exception as err:
+                print('runtimeerror caught')
                 print('Error: %s' % err)
 
 
