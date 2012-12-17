@@ -38,6 +38,10 @@ class UdtSocket(object):
 
         """
         if _sock != None:
+            assert _sock.domain   == family
+            assert _sock.type     == type 
+            assert _sock.protocol == protocol
+
             self.__sock = _sock
         else:
             self.__sock = udt4.socket(family, type, protocol) 
@@ -65,6 +69,14 @@ class UdtSocket(object):
         @return socket type
         """
         return self.__sock.type
+
+    
+    @property
+    def UDTSOCKET(self):
+        """
+        @return the underlying udtsocket primitive
+        """
+        return self.__sock 
 
 
     def __del__(self):
@@ -99,7 +111,7 @@ class UdtSocket(object):
         :param  address:    device ip port pair  
         :type   address:    tuple( str(), int() )
         """
-        udt4.bind(self.__sock, str(address[0]), int(addres[1]))
+        udt4.bind(self.__sock, str(address[0]), int(address[1]))
         
 
 

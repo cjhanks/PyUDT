@@ -54,8 +54,6 @@
 #include "py-udt4-socket.hh" 
 #include "py-udt4-exception.hh" 
 
-
-
 #ifdef __cplusplus
 extern "C" {
 #endif 
@@ -215,8 +213,11 @@ pyudt4_accept(PyObject *py_self, PyObject *args)
         sockaddr_in client_stg;
         int addr_len = sizeof(client_stg);
         
-        UDTSOCKET client = UDT::accept(sock->sock, (sockaddr*) &client_stg, 
-                                       &addr_len);
+        UDTSOCKET client;
+        
+        Py_BEGIN_ALLOW_THREADS;
+        client = UDT::accept(sock->sock, (sockaddr*) &client_stg, &addr_len);
+        Py_END_ALLOW_THREADS;
 
         if (UDT::INVALID_SOCK == client) {
                 RETURN_UDT_RUNTIME_ERROR;
@@ -642,17 +643,23 @@ pyudt4_send(PyObject *py_self, PyObject *args)
         }
         
         if (pref_len > buf_len) {
+                Py_BEGIN_ALLOW_THREADS;
                 rc = UDT::send(sock->sock, buf, buf_len, 0);
-                
+                Py_END_ALLOW_THREADS;
+
                 if (UDT::ERROR == rc) 
                         RETURN_UDT_RUNTIME_ERROR;
 
                 /* send remainder */
                 memset(buf, '\0', pref_len - buf_len);
                 
+                Py_BEGIN_ALLOW_THREADS;
                 rc = UDT::send(sock->sock, buf, pref_len - buf_len, 0);
+                Py_END_ALLOW_THREADS;
         } else {
+                Py_BEGIN_ALLOW_THREADS;
                 rc = UDT::send(sock->sock, buf, buf_len, 0);
+                Py_END_ALLOW_THREADS;
         }
                 
         if (UDT::ERROR == rc)   
@@ -704,14 +711,18 @@ pyudt4_sendmsg(PyObject *py_self, PyObject *args)
                 
                 memcpy(new_buf, buf , buf_len );
                 memset(&new_buf[buf_len], '\0', pref_len - buf_len);
-                        
+                
+                Py_BEGIN_ALLOW_THREADS;
                 rc = UDT::sendmsg(sock->sock, new_buf, pref_len, ttl, 
                                   in_order != Py_False);
+                Py_END_ALLOW_THREADS;
 
                 PyMem_Free(new_buf);
         } else {
+                Py_BEGIN_ALLOW_THREADS;
                 rc = UDT::sendmsg(sock->sock, buf, buf_len, ttl, 
                                   in_order != Py_False);
+                Py_END_ALLOW_THREADS;
         }
         
         if (UDT::ERROR == rc) 
@@ -752,8 +763,10 @@ pyudt4_recv(PyObject *py_self, PyObject *args)
         }
 
         memset(buf, '\0', buf_len);
-
+        
+        Py_BEGIN_ALLOW_THREADS;
         rc = UDT::recv(sock->sock, buf, buf_len, 0);
+        Py_END_ALLOW_THREADS;
 
         if (UDT::ERROR == rc) {
                 PyMem_Free(buf);
@@ -799,7 +812,9 @@ pyudt4_recvmsg(PyObject *py_self, PyObject *args)
 
         memset(buf, '\0', buf_len);
 
+        Py_BEGIN_ALLOW_THREADS;
         rc = UDT::recvmsg(sock->sock, buf, buf_len);
+        Py_END_ALLOW_THREADS;
 
         if (UDT::ERROR == rc) {
                 PyMem_Free(buf);
@@ -832,12 +847,17 @@ pyudt4_sendfile(PyObject *py_self, PyObject *args)
                 return 0x0;
         }
         
-        
         std::fstream fstrm(fname);
+
+        int rc;
         
-        if (UDT::ERROR == UDT::sendfile(sock->sock, fstrm, offset, size, block))
+        Py_BEGIN_ALLOW_THREADS;
+        rc = UDT::sendfile(sock->sock, fstrm, offset, size, block);
+        Py_END_ALLOW_THREADS; 
+
+        if (UDT::ERROR == rc)
                 RETURN_UDT_RUNTIME_ERROR;
-        
+
         return Py_BuildValue("i", 0);
 } 
 
@@ -863,8 +883,13 @@ pyudt4_recvfile(PyObject *py_self, PyObject *args)
         }
         
         std::fstream fstrm(fname);
-
-        if (UDT::ERROR == UDT::recvfile(sock->sock, fstrm, offset, size, block))
+        
+        int rc;
+        Py_BEGIN_ALLOW_THREADS;
+        rc = UDT::recvfile(sock->sock, fstrm, offset, size, block);
+        Py_END_ALLOW_THREADS;
+        
+        if (UDT::ERROR == rc) 
                 RETURN_UDT_RUNTIME_ERROR;
         
         return Py_BuildValue("i", 0);
