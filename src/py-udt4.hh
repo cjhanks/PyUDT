@@ -50,31 +50,22 @@
         @macro RETURN_UDT_RUNTIME_ERROR 
         Set a runtime exception and return null
   */
-///*
 #define RETURN_UDT_RUNTIME_ERROR \
         do {\
-                fprintf(stderr, "here___%i\n", __LINE__);\
-                assert(0x0 != pyudt4_exception_type);\
-                fprintf(stderr, "here___%i\n", __LINE__);\
-                PyErr_NewException((char*) "udt4.UDTException", \
-                       _PyObject_New(pyudt4_exception_type), 0x0\
+                PyObject *__obj = PyTuple_New(2);\
+                PyTuple_SetItem(__obj, 0, \
+                        PyInt_FromLong(UDT::getlasterror().getErrorCode())\
                         );\
-                \
-                fprintf(stderr, "here___%i\n", __LINE__);\
+                PyTuple_SetItem(__obj, 1, \
+                        PyString_FromString(\
+                                UDT::getlasterror().getErrorMessage()\
+                                )\
+                        );\
+                UDT::getlasterror().clear();\
+                PyErr_SetObject(pyudt4_exception_obj, __obj);\
+                Py_DECREF(__obj);\
                 return 0x0;\
         } while (0)
 //*/
-/*
-#define RETURN_UDT_RUNTIME_ERROR \
-        do {\
-                assert(0x0 != pyudt4_exception_type);\
-                PyErr_SetString(\
-                        PyExc_RuntimeError, \
-                        UDT::getlasterror().getErrorMessage()\
-                        );\
-                \
-                return 0x0;\
-        } while (0)
-*/
 
 #endif // __PY_UDT_H_ 
