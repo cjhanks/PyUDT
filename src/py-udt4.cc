@@ -52,7 +52,6 @@
 
 #include "py-udt4-epoll.hh"
 #include "py-udt4-socket.hh" 
-#include "py-udt4-exception.hh" 
 
 #ifdef __cplusplus
 extern "C" {
@@ -933,14 +932,14 @@ static PyMethodDef pyudt4_module_methods[] = {
                 (PyCFunction)pyudt4_socket,
                 METH_VARARGS,
                 "Initialize a socket (domain, type, protocol)           \n"
-                "@param domain          socket domain/family            \n"
-                "@type  domain          int()                           \n"
+                ":param domain:         socket domain/family            \n"
+                ":type  domain:         int()                           \n"
                 "\n"
-                "@param type            socket type                     \n"
-                "@type  type            int()                           \n"
+                ":param type:           socket type                     \n"
+                ":type  type:           int()                           \n"
                 "\n"
-                "@param protocol        socket protocol                 \n"
-                "@type  type            nt()                            \n"
+                ":param protocol:       socket protocol                 \n"
+                ":type  protocol:       int()                           \n"
                 "\n"
                 "@return UDTSOCKET class instance"
 
@@ -950,11 +949,11 @@ static PyMethodDef pyudt4_module_methods[] = {
                 (PyCFunction)pyudt4_bind,
                 METH_VARARGS,
                 "Bind socket to address (host, port)                    \n"
-                "@param host            local host ip to bind to        \n"
-                "@type  host            str()                           \n"
+                ":param host:           local host ip to bind to        \n"
+                ":type  host:           str()                           \n"
                 "\n"
-                "@param port            local isten port to bind to     \n"
-                "@type  port            int()                           \n"
+                ":param port:           local isten port to bind to     \n"
+                ":type  port:           int()                           \n"
                 "\n"
         },
         {
@@ -962,8 +961,8 @@ static PyMethodDef pyudt4_module_methods[] = {
                 (PyCFunction)pyudt4_listen,
                 METH_VARARGS,
                 "Mark socket as passive to accept (backlog)             \n"
-                "@param backlog         maximum size of queue           \n"
-                "@type  backlog         int()                           \n"
+                ":param backlog:        maximum size of queue           \n"
+                ":type  backlog:        int()                           \n"
                 "\n"
                 "@return 0 for success                                    "
         },
@@ -971,7 +970,11 @@ static PyMethodDef pyudt4_module_methods[] = {
                 "accept",
                 (PyCFunction)pyudt4_accept,
                 METH_VARARGS,
-                ""
+                "Blocking call.  Currently this call will block permanently  \n" 
+                "and EscapeExceptions will not break its execution           \n"
+                "(unforunately)                                              \n"
+                "\n"
+                ":return tuple(UDTSOCKET, str)                               \n"
         },
         {
                 "connect",
@@ -1053,11 +1056,11 @@ static PyMethodDef pyudt4_module_methods[] = {
 #endif 
 
 PyMODINIT_FUNC
-initudt4()
+init_udt4()
 {
         PyObject *m;
          
-        if ((m = Py_InitModule3("udt4", pyudt4_module_methods, 
+        if ((m = Py_InitModule3("_udt4", pyudt4_module_methods, 
                                 "Python extension for UDT4"
                                 )) == 0x0)
                 return;
