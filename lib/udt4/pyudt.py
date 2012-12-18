@@ -1,9 +1,9 @@
-""" @module pyudt4.py
+""" 
+:module: pyudt4.py
 
 Python-style sockets wrapping the (nearly) straight C++ --> Python 
 implementation of module udt4.  All udt4 functions and constants are imported
 into this module.
-
 """
 
 import os
@@ -18,9 +18,12 @@ __all__     = os._get_exports_list(udt4) + \
 
 
 class UdtSocket(object):
-    """ @class UdtSocket
+    """ 
+    :class UdtSocket:
+
     A 'pythonic-wrapper' for the UDT4 library
     """
+
     def __init__(self, family = socklib.AF_INET, type = socklib.SOCK_STREAM,
                  protocol = 0, _sock = None):
         """

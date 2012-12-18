@@ -43,7 +43,7 @@
 from distutils.core import setup, Extension 
 
 udt4 = Extension(
-        'udt4',
+        '_udt4',
         sources         = [
             'src/py-udt4.cc', 
             'src/py-udt4-epoll.cc',
@@ -52,7 +52,7 @@ udt4 = Extension(
         include_dirs    = ['/usr/local/include'],
         libraries       = ['udt', 'pthread'],
         library_dirs    = ['/usr/local/lib'],
-        extra_link_args = ['-g -O3 -Wall -Wextra -Werror']
+        #extra_compile_args = '-g -O3 -Wall -Wextra -Werror'
         )
 
 setup(
@@ -62,6 +62,9 @@ setup(
         author          = 'Christopher J. Hanks',
         author_email    = 'develop@cjhanks.name',
         url             = 'http://cjhanks.name/projects/py-udt.php',
-        py_modules      = ['pyudt4'],
-        ext_modules     = [udt4] 
+        #py_modules      = ['pyudt4'],
+        packages        = ['udt4'],
+        package_dir     = { '' : 'lib' },
+        ext_modules     = [udt4],
+
     ) 

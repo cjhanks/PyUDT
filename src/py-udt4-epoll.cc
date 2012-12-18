@@ -45,7 +45,6 @@
 #include <set>
 
 #include "py-udt4.hh"
-#include "py-udt4-exception.hh"
 
 #ifdef __cplusplus
 extern "C" {
