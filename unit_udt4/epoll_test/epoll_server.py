@@ -10,7 +10,7 @@ class EpollThread(Thread):
         self.domain  = True
         self.__epoll = pyudt4.epoll() 
         self.__socks = []
-
+        self.__cont  = True
 
     def run(self):
         from datetime import datetime 
@@ -25,12 +25,13 @@ class EpollThread(Thread):
             print(returns) 
 
             for i in returns[0]:
-                print(i)
                 print(pyudt4.recv(i, 4096)[0:3])
+            
+            if not self.__cont:
+                break 
    
 
     def add_usock(self, sock):
-        print('add sock: %s' % sock)
         pyudt4.setsockopt(sock, pyudt4.UDT_RCVTIMEO, 8000)
         pyudt4.setsockopt(sock, pyudt4.UDT_SNDTIMEO, 8000)
         self.__epoll.add_usock(sock, 0x1 | 0x8)
@@ -43,9 +44,13 @@ class EpollThread(Thread):
             sock.debug() 
             try:
                 print(pyudt4.getsockopt(sock, pyudt4.UDT_STATE))
-            except Exception as err:
-                print('runtimeerror caught')
+            except pyudt4.UDTException as err:
                 print('Error: %s' % err)
+                self.__cont = False
+                return False 
+
+        return True
+        
 
 
 def main(settings):
@@ -68,10 +73,8 @@ def main(settings):
         sock, host = server.accept() 
         epoll.add_usock(sock)
     
-    while True:
+    while epoll.check_socks():
         time.sleep(4) 
-        epoll.check_socks() 
-    #epoll = pyudt4.epoll()  
     
 
 if __name__ == '__main__':

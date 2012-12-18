@@ -59,7 +59,7 @@ extern "C" {
 #endif 
 
 static PyTypeObject *pyudt4_socket_type    = 0x0;
-static PyTypeObject *pyudt4_exception_type = 0x0; 
+static PyObject     *pyudt4_exception_obj = 0x0; 
 static PyTypeObject *pyudt4_epoll_type     = 0x0; 
 
 /* -------------------------------------------------------------------------- */
@@ -1056,18 +1056,25 @@ PyMODINIT_FUNC
 initudt4()
 {
         PyObject *m;
-        
+         
         if ((m = Py_InitModule3("udt4", pyudt4_module_methods, 
                                 "Python extension for UDT4"
                                 )) == 0x0)
                 return;
-        
+       
         /* add exception */
-        pyudt4_exception_type = initpyudt4_exception_type(m);
-        pyudt4_socket_type    = initpyudt4_socket_type(m);
-        pyudt4_epoll_type     = initpyudt4_epoll_type(m, pyudt4_exception_type);
+        pyudt4_exception_obj = PyErr_NewException(
+                                        "udt4.UDTException", 0x0, 0x0
+                                        );
+        Py_INCREF(pyudt4_exception_obj); 
+        PyModule_AddObject(
+                        m, "UDTException", pyudt4_exception_obj
+                        );
+
+        pyudt4_socket_type   = initpyudt4_socket_type(m);
+        pyudt4_epoll_type    = initpyudt4_epoll_type(m, pyudt4_exception_obj);
         
-        assert(0x0 != pyudt4_exception_type);
+        assert(0x0 != pyudt4_exception_obj);
 
         /* sockoption enums */
         if (

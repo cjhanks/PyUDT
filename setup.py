@@ -47,8 +47,7 @@ udt4 = Extension(
         sources         = [
             'src/py-udt4.cc', 
             'src/py-udt4-epoll.cc',
-            'src/py-udt4-socket.cc',
-            'src/py-udt4-exception.cc'
+            'src/py-udt4-socket.cc'
             ],
         include_dirs    = ['/usr/local/include'],
         libraries       = ['udt', 'pthread'],

@@ -51,7 +51,7 @@
 extern "C" {
 #endif 
 
-static PyTypeObject *pyudt4_exception_type = 0x0; 
+static PyObject *pyudt4_exception_obj = 0x0; 
 
 
 static int
@@ -383,12 +383,12 @@ static PyTypeObject pyudt4_epoll_type = {
 
 
 PyTypeObject*
-initpyudt4_epoll_type(PyObject *module, PyTypeObject *exception_type)
+initpyudt4_epoll_type(PyObject *module, PyObject *exception_type)
 {
         if (PyType_Ready(&pyudt4_epoll_type) < 0)
                 return 0x0;
 
-        pyudt4_exception_type = exception_type; 
+        pyudt4_exception_obj = exception_type; 
 
         pyudt4_epoll_type.tp_new = PyType_GenericNew;
         Py_INCREF(&pyudt4_epoll_type);

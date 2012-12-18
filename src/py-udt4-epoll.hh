@@ -66,7 +66,7 @@ typedef struct __pyudt4_epoll_obj{
 
 
 PyTypeObject* 
-initpyudt4_epoll_type(PyObject *module, PyTypeObject *exception_type);
+initpyudt4_epoll_type(PyObject *module, PyObject *exception_type);
 
 #ifdef __cplusplus
 }
