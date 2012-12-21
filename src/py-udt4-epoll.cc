@@ -123,7 +123,11 @@ pyudt4_epoll_add_usock(pyudt4_epoll_obj *self, PyObject *args)
         if (UDT::ERROR == UDT::epoll_add_usock(self->eid, sock->sock, &flag))
                 RETURN_UDT_RUNTIME_ERROR;
 
-        Py_RETURN_NONE;        
+        return Py_BuildValue("i",
+                        self->readfds .count(sock->sock)  ? 0x1 : 0x0 |
+                        self->writefds.count(sock->sock)  ? 0x2 : 0x0 |
+                        self->errfds  .count(sock->sock)  ? 0x8 : 0x0 
+                        );
 }
 
 
@@ -163,7 +167,7 @@ pyudt4_epoll_remove_usock(pyudt4_epoll_obj *self, PyObject *args)
                 return 0x0;
         }
         
-        /* increase the reft for each mapper */
+        /* decrease the ref for each mapper */
         if (0x0 == flag || flag & 0x2) {
                 Py_XDECREF(sock);
                 self->readfds.insert(std::make_pair(sock->sock, sock));
@@ -181,8 +185,12 @@ pyudt4_epoll_remove_usock(pyudt4_epoll_obj *self, PyObject *args)
 
         if (UDT::ERROR == UDT::epoll_add_usock(self->eid, sock->sock, &flag))
                 RETURN_UDT_RUNTIME_ERROR;
-
-        Py_RETURN_NONE;
+        
+        return Py_BuildValue("i",
+                        self->readfds .count(sock->sock)  ? 0x1 : 0x0 |
+                        self->writefds.count(sock->sock)  ? 0x2 : 0x0 |
+                        self->errfds  .count(sock->sock)  ? 0x8 : 0x0 
+                        );
 }
 
 
@@ -308,31 +316,86 @@ static PyMethodDef pyudt4_epoll_methods[] = {
                 "add_usock",
                 (PyCFunction)pyudt4_epoll_add_usock,
                 METH_VARARGS,
-                "add a UDT socket to poll"
+                ":param:  socket        Socket to add   \n"
+                ":type:   socket        udt4.UDTSOCKET  \n"
+                "\n"
+                ":param:  flags           \n"
+                ":type:   int()           \n"
+                "\n"
+                "Add a UDT socket to the EPOLL instance.  The flags can be 0x1\n"
+                "(read), 0x4 (write) 0x8 (error)                              \n"
+                "\n"
+                ":return:       Value of remaining watches : int()            \n"
+             
         },
         {
                 "add_ssock",
                 (PyCFunction)pyudt4_epoll_add_ssock,
                 METH_VARARGS,
-                "add a System socket to poll [eg: TCP socket fd]"
+                ":param:  socket        Socket to add   \n"
+                ":type:   socket        udt4.UDTSOCKET  \n"
+                "\n"
+                ":param:  flags           \n"
+                ":type:   int()           \n"
+                "\n"
+                "Add a System socket (UDP, TCP or other), flags are ignored. \n"
+                "\n"
+                ":return:       PyNONE  \n"
+             
         },
         {
-                "add_remove_usock",
-                (PyCFunction)pyudt4_epoll_add_usock,
+                "remove_usock",
+                (PyCFunction)pyudt4_epoll_remove_usock,
                 METH_VARARGS,
-                "add a UDT socket to poll"
+                ":param:  socket        Socket to add   \n"
+                ":type:   socket        udt4.UDTSOCKET  \n"
+                "\n"
+                ":param:  flags           \n"
+                ":type:   int()           \n"
+                "\n"
+                "Remove a watched UDT socket to the EPOLL instance.  The flags\n"
+                "can be 0x1 (read), 0x4 (write) 0x8 (error).                  \n"
+                "\n"
+                ":return:       Value of remaining watches : int()            \n"
+            
         },
         {
-                "add_remove_ssock",
-                (PyCFunction)pyudt4_epoll_add_ssock,
+                "remove_ssock",
+                (PyCFunction)pyudt4_epoll_remove_ssock,
                 METH_VARARGS,
-                "add a UDT socket to poll"
+                ":param:  socket        Socket to add   \n"
+                ":type:   socket        udt4.UDTSOCKET  \n"
+                "\n"
+                ":param:  flags           \n"
+                ":type:   int()           \n"
+                "\n"
+                "Remove a System socket (UDP, TCP or other), flags are ignored.\n"
+                "\n"
+                ":return:       PyNONE  \n"
         },
         {
                 "wait",
                 (PyCFunction)pyudt4_epoll_wait,
                 METH_VARARGS,
-                "add a UDT socket to poll"
+                ":param  do_uread       Return waiting UDT Read sockets? \n"
+                ":type   do_uread       bool()\n"
+                "\n"
+                ":param  do_uwrite      Return waiting UDT Write sockets? \n"
+                ":type   do_uwrite      bool()\n"
+                "\n"
+                ":param  wait           EPOLL timeout                    \n"
+                ":type   wait           int() \n"
+                "\n"
+                ":param  do_sread       Return waiting UDT Read sockets? \n"
+                ":type   do_sread       bool() default = False\n"
+                "\n"
+                ":param  do_swrite      Return waiting UDT Read sockets? \n"
+                ":type   do_swrite      bool() default = False\n"
+                "\n"
+                ":return: tuple(frozenset(read_udt_sockets) ,\n"
+                "               frozenset(write_udt_sockets),\n"
+                "               frozenset(write_sys_sockets),\n"
+                "               frozenset(write_sys_sockets))\n"
         },
         { 0x0 }
 };

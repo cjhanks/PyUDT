@@ -80,7 +80,13 @@ def main(settings):
     if not create_client(settings['host'], settings['port']):
         print('failed to create client')
         return 1
-
+    
+    perf = udt4.perfmon(client) 
+    print(perf)
+    print(perf.pktSentTotal)
+    print(perf.pktRecvTotal)
+    print(perf.usPktSndPeriod)
+    print(perf.msRTT)
     test0()
     test1()
 
