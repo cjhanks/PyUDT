@@ -62,6 +62,13 @@ static PyObject     *pyudt4_exception_obj = 0x0;
 static PyTypeObject *pyudt4_epoll_type     = 0x0; 
 
 /* -------------------------------------------------------------------------- */
+static PyObject*
+pyudt4_pyudt4_version(PyObject *py_self)
+{
+        return Py_BuildValue(
+                        "ii", MAJOR_VERSION, MINOR_VERSION
+                        );
+}
 
 static PyObject*
 pyudt4_startup(PyObject *py_self) 
@@ -915,6 +922,12 @@ pyudt4_recvfile(PyObject *py_self, PyObject *args)
 
 
 static PyMethodDef pyudt4_module_methods[] = {
+        {
+                "pyudt4_version",
+                (PyCFunction)pyudt4_pyudt4_version,
+                METH_NOARGS,
+                ":return: tuple(major, minor)"
+        },
         {
                 "startup",
                 (PyCFunction)pyudt4_startup,

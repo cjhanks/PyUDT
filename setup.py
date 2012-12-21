@@ -52,7 +52,10 @@ udt4 = Extension(
         include_dirs    = ['/usr/local/include'],
         libraries       = ['udt', 'pthread'],
         library_dirs    = ['/usr/local/lib'],
-        #extra_compile_args = '-g -O3 -Wall -Wextra -Werror'
+        define_macros   = [ ('NDEBUG', 1), 
+                            ('MAJOR_VERSION', 0), 
+                            ('MINOR_VERSION', 3) 
+                          ]
         )
 
 setup(

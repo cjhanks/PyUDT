@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 
 from   threading import Thread 
-import pyudt4 
+import udt4
+import udt4.pyudt as pyudt
 import time 
 
 class EpollThread(Thread):
     def __init__(self):
         Thread.__init__(self)
         self.domain  = True
-        self.__epoll = pyudt4.epoll() 
+        self.__epoll = udt4.UDTepoll() 
         self.__socks = []
         self.__cont  = True
 
@@ -25,15 +26,15 @@ class EpollThread(Thread):
             print(returns) 
 
             for i in returns[0]:
-                print(pyudt4.recv(i, 4096)[0:3])
+                print(udt4.recv(i, 4096)[0:3])
             
             if not self.__cont:
                 break 
    
 
     def add_usock(self, sock):
-        pyudt4.setsockopt(sock, pyudt4.UDT_RCVTIMEO, 8000)
-        pyudt4.setsockopt(sock, pyudt4.UDT_SNDTIMEO, 8000)
+        udt4.setsockopt(sock, udt4.UDT_RCVTIMEO, 8000)
+        udt4.setsockopt(sock, udt4.UDT_SNDTIMEO, 8000)
         self.__epoll.add_usock(sock, 0x1 | 0x8)
         self.__socks.append(sock) 
 
@@ -43,8 +44,8 @@ class EpollThread(Thread):
             print(sock)
             sock.debug() 
             try:
-                print(pyudt4.getsockopt(sock, pyudt4.UDT_STATE))
-            except pyudt4.UDTException as err:
+                print(udt4.getsockopt(sock, udt4.UDT_STATE))
+            except udt4.UDTException as err:
                 print('Error: %s' % err)
                 self.__cont = False
                 return False 
@@ -57,15 +58,15 @@ def main(settings):
     """
     Initialize the server and wait on incoming sockets 
     """
-    pyudt4.startup() 
+    udt4.startup() 
     
     # initialize epoll thread 
     epoll = EpollThread() 
     epoll.start() 
     
-    # init server in pyudt4 style
+    # init server in udt4 style
     print('init server')
-    server = pyudt4.UdtSocket() 
+    server = pyudt.UdtSocket() 
     server.bind((settings['host'], settings['port']))
     server.listen(1024) 
 
