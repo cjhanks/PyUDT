@@ -10,6 +10,7 @@ udt4
     +-- .UDTSOCKET          : Raw UDTSOCKET reference 
     +-- .UDTepoll           : epoll implementation accepting UDTSOCKET instances
     +-- .UDTException       : Maps to UDTEXCEPTION (error_code, error_string) 
+    +-- .TRACEINFO          : Direct structure map to UDT::TRACEINFO 
     |
     .pyudt
          |

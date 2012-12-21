@@ -12,7 +12,8 @@ class EpollThread(Thread):
         self.__epoll = udt4.UDTepoll() 
         self.__socks = []
         self.__cont  = True
-
+    
+    
     def run(self):
         from datetime import datetime 
 

@@ -58,8 +58,355 @@ extern "C" {
 #endif 
 
 static PyTypeObject *pyudt4_socket_type    = 0x0;
-static PyObject     *pyudt4_exception_obj = 0x0; 
+static PyObject     *pyudt4_exception_obj  = 0x0; 
 static PyTypeObject *pyudt4_epoll_type     = 0x0; 
+
+/* -------------------------------------------------------------------------- */
+typedef struct __pyudt4_perfmon_obj {
+        PyObject_HEAD;
+        UDT::TRACEINFO trace;
+} pyudt4_perfmon_obj;
+
+
+static PyObject*
+pyudt4_perfmon_msTimeStamp(pyudt4_perfmon_obj *self)
+{       return Py_BuildValue("l", self->trace.msTimeStamp);     }
+
+static PyObject*
+pyudt4_perfmon_pktSentTotal(pyudt4_perfmon_obj *self)
+{       return Py_BuildValue("l", self->trace.pktSentTotal);    }
+
+static PyObject*
+pyudt4_perfmon_pktRecvTotal(pyudt4_perfmon_obj *self)
+{       return Py_BuildValue("l", self->trace.pktRecvTotal);    }
+
+static PyObject*
+pyudt4_perfmon_pktSndLossTotal(pyudt4_perfmon_obj *self)
+{       return Py_BuildValue("i", self->trace.pktSndLossTotal); }
+
+static PyObject*
+pyudt4_perfmon_pktRcvLossTotal(pyudt4_perfmon_obj *self)
+{       return Py_BuildValue("i", self->trace.pktRcvLossTotal); }
+
+static PyObject*
+pyudt4_perfmon_pktRetransTotal(pyudt4_perfmon_obj *self)
+{       return Py_BuildValue("i", self->trace.pktRetransTotal); }
+
+static PyObject*
+pyudt4_perfmon_pktSentACKTotal(pyudt4_perfmon_obj *self)
+{       return Py_BuildValue("i", self->trace.pktSentACKTotal); }
+
+static PyObject*
+pyudt4_perfmon_pktRecvACKTotal(pyudt4_perfmon_obj *self)
+{       return Py_BuildValue("i", self->trace.pktRecvACKTotal); }
+
+static PyObject*
+pyudt4_perfmon_pktSentNAKTotal(pyudt4_perfmon_obj *self)
+{       return Py_BuildValue("i", self->trace.pktSentNAKTotal); }
+
+static PyObject*
+pyudt4_perfmon_pktRecvNAKTotal(pyudt4_perfmon_obj *self)
+{       return Py_BuildValue("i", self->trace.pktRecvNAKTotal); }
+
+static PyObject*
+pyudt4_perfmon_pktSent(pyudt4_perfmon_obj *self)
+{       return Py_BuildValue("l", self->trace.pktSent);         }
+
+static PyObject*
+pyudt4_perfmon_pktRecv(pyudt4_perfmon_obj *self)
+{       return Py_BuildValue("l", self->trace.pktRecv);         }
+
+static PyObject*
+pyudt4_perfmon_pktSndLoss(pyudt4_perfmon_obj *self)
+{       return Py_BuildValue("i", self->trace.pktSndLoss);      }
+
+static PyObject*
+pyudt4_perfmon_pktRcvLoss(pyudt4_perfmon_obj *self)
+{       return Py_BuildValue("i", self->trace.pktRcvLoss);      }
+
+static PyObject*
+pyudt4_perfmon_pktRetrans(pyudt4_perfmon_obj *self)
+{       return Py_BuildValue("i", self->trace.pktRetrans);      }
+
+static PyObject*
+pyudt4_perfmon_pktSentACK(pyudt4_perfmon_obj *self)
+{       return Py_BuildValue("i", self->trace.pktSentACK);      }
+
+static PyObject*
+pyudt4_perfmon_pktRecvACK(pyudt4_perfmon_obj *self)
+{       return Py_BuildValue("i", self->trace.pktRecvACK);      }
+
+static PyObject*
+pyudt4_perfmon_pktSentNAK(pyudt4_perfmon_obj *self)
+{       return Py_BuildValue("i", self->trace.pktSentNAK);      }
+
+static PyObject*
+pyudt4_perfmon_pktRecvNAK(pyudt4_perfmon_obj *self)
+{       return Py_BuildValue("i", self->trace.pktRecvNAK);      }
+
+static PyObject*
+pyudt4_perfmon_mbpsSendRate(pyudt4_perfmon_obj *self)
+{       return Py_BuildValue("d", self->trace.mbpsSendRate);    }
+
+static PyObject*
+pyudt4_perfmon_mbpsRecvRate(pyudt4_perfmon_obj *self)
+{       return Py_BuildValue("d", self->trace.mbpsRecvRate);    }
+
+static PyObject*
+pyudt4_perfmon_usPktSndPeriod(pyudt4_perfmon_obj *self)
+{       return Py_BuildValue("d", self->trace.usPktSndPeriod);  }
+
+static PyObject*
+pyudt4_perfmon_pktFlowWindow(pyudt4_perfmon_obj *self)
+{       return Py_BuildValue("i", self->trace.pktFlowWindow);   }
+
+static PyObject*
+pyudt4_perfmon_pktCongestionWindow(pyudt4_perfmon_obj *self)
+{       return Py_BuildValue("i", self->trace.pktCongestionWindow);}
+
+static PyObject*
+pyudt4_perfmon_pktFlightSize(pyudt4_perfmon_obj *self)
+{       return Py_BuildValue("i", self->trace.pktFlightSize);   }
+
+static PyObject*
+pyudt4_perfmon_msRTT(pyudt4_perfmon_obj *self)
+{       return Py_BuildValue("d", self->trace.msRTT);           }
+
+static PyObject*
+pyudt4_perfmon_mbpsBandwidth(pyudt4_perfmon_obj *self)
+{       return Py_BuildValue("d", self->trace.mbpsBandwidth);   }
+
+static PyObject*
+pyudt4_perfmon_byteAvailSndBuf(pyudt4_perfmon_obj *self)
+{       return Py_BuildValue("i", self->trace.byteAvailSndBuf); }
+
+static PyObject*
+pyudt4_perfmon_byteAvailRcvBuf(pyudt4_perfmon_obj *self)
+{       return Py_BuildValue("i", self->trace.byteAvailRcvBuf); }
+
+
+
+static PyGetSetDef pyudt4_perfmon_getset[] = {
+        {
+                (char*)  "msTimeStamp",
+                (getter) pyudt4_perfmon_msTimeStamp,
+                (setter) 0x0,
+                (char*)  ""
+        },
+        {
+                (char*)  "pktSentTotal",
+                (getter) pyudt4_perfmon_pktSentTotal,
+                (setter) 0x0,
+                (char*)  "" 
+        },
+        {
+                (char*)  "pktRecvTotal",
+                (getter) pyudt4_perfmon_pktRecvTotal,
+                (setter) 0x0,
+                (char*)  "" 
+        },
+        {
+                (char*)  "pktSndLossTotal",
+                (getter) pyudt4_perfmon_pktSndLossTotal,
+                (setter) 0x0,
+                (char*)  "" 
+        },
+        {
+                (char*)  "pktRcvLossTotal",
+                (getter) pyudt4_perfmon_pktRcvLossTotal,
+                (setter) 0x0,
+                (char*)  "" 
+        },
+        {
+                (char*)  "pktRetransTotal",
+                (getter) pyudt4_perfmon_pktRetransTotal,
+                (setter) 0x0,
+                (char*)  "" 
+        },
+        {
+                (char*)  "pktSentACKTotal",
+                (getter) pyudt4_perfmon_pktSentACKTotal,
+                (setter) 0x0,
+                (char*)  "" 
+        },
+        {
+                (char*)  "pktRecvACKTotal",
+                (getter) pyudt4_perfmon_pktRecvACKTotal, 
+                (setter) 0x0,
+                (char*)  "" 
+        },
+        {
+                (char*)  "pktSentNAKTotal",
+                (getter) pyudt4_perfmon_pktSentNAKTotal,
+                (setter) 0x0,
+                (char*)  "" 
+        },
+        {
+                (char*)  "pktRecvNAKTotal",
+                (getter) pyudt4_perfmon_pktRecvNAKTotal,
+                (setter) 0x0,
+                (char*)  "" 
+        },
+        {
+                (char*)  "pktSent",
+                (getter) pyudt4_perfmon_pktSent,
+                (setter) 0x0,
+                (char*)  "" 
+        },
+        {
+                (char*)  "pktRecv",
+                (getter) pyudt4_perfmon_pktRecv,
+                (setter) 0x0,
+                (char*)  "" 
+        },
+        {
+                (char*)  "pktSndLoss",
+                (getter) pyudt4_perfmon_pktSndLoss,
+                (setter) 0x0,
+                (char*)  "" 
+        },
+        {
+                (char*)  "pktRcvLoss",
+                (getter) pyudt4_perfmon_pktRcvLoss, 
+                (setter) 0x0,
+                (char*)  "" 
+        },
+        {
+                (char*)  "pktRetrans",
+                (getter) pyudt4_perfmon_pktRetrans, 
+                (setter) 0x0,
+                (char*)  "" 
+        },
+        {
+                (char*)  "pktSentACK",
+                (getter) pyudt4_perfmon_pktSentACK,
+                (setter) 0x0,
+                (char*)  "" 
+        },
+        {
+                (char*)  "pktRecvACK",
+                (getter) pyudt4_perfmon_pktRecvACK,
+                (setter) 0x0,
+                (char*)  "" 
+        },
+        {
+                (char*)  "pktSentNAK",
+                (getter) pyudt4_perfmon_pktSentNAK,
+                (setter) 0x0,
+                (char*)  "" 
+        },
+        {
+                (char*)  "pktRecvNAK",
+                (getter) pyudt4_perfmon_pktRecvNAK,
+                (setter) 0x0,
+                (char*)  "" 
+        },
+        {
+                (char*)  "mbpsSendRate",
+                (getter) pyudt4_perfmon_mbpsSendRate,
+                (setter) 0x0,
+                (char*)  "" 
+        },
+        {
+                (char*)  "mbpsRecvRate",
+                (getter) pyudt4_perfmon_mbpsRecvRate,
+                (setter) 0x0,
+                (char*)  "" 
+        },
+        {
+                (char*)  "usPktSndPeriod",
+                (getter) pyudt4_perfmon_usPktSndPeriod,
+                (setter) 0x0,
+                (char*)  "" 
+        },
+        {
+                (char*)  "pktFlowWindow",
+                (getter) pyudt4_perfmon_pktFlowWindow,
+                (setter) 0x0,
+                (char*)  "" 
+        },
+        {
+                (char*)  "pktCongestionWindow",
+                (getter) pyudt4_perfmon_pktCongestionWindow,
+                (setter) 0x0,
+                (char*)  "" 
+        },
+        {
+                (char*)  "pktFlightSize",
+                (getter) pyudt4_perfmon_pktFlightSize,
+                (setter) 0x0,
+                (char*)  "" 
+        },
+        {
+                (char*)  "msRTT",
+                (getter) pyudt4_perfmon_msRTT,
+                (setter) 0x0,
+                (char*)  "" 
+        },
+        {
+                (char*)  "mbpsBandwidth",
+                (getter) pyudt4_perfmon_mbpsBandwidth,
+                (setter) 0x0,
+                (char*)  "" 
+        },
+        {
+                (char*)  "byteAvailSndBuf",
+                (getter) pyudt4_perfmon_byteAvailSndBuf,
+                (setter) 0x0,
+                (char*)  "" 
+        },
+        {
+                (char*)  "byteAvailRcvBuf",
+                (getter) pyudt4_perfmon_byteAvailRcvBuf,
+                (setter) 0x0,
+                (char*)  "" 
+        },
+        { 0x0 }
+};
+
+
+static PyTypeObject pyudt4_perfmon_type = {
+    PyObject_HEAD_INIT(NULL)
+    0,                                          /* ob_size              */
+    "TRACEINFO",                                  /* tp_name              */
+    sizeof(pyudt4_perfmon_obj),                 /* tp_basicsize         */
+    0,                                          /* tp_itemsize          */
+    0,                                          /* tp_dealloc           */
+    0,                                          /* tp_print             */
+    0,                                          /* tp_getattr           */
+    0,                                          /* tp_setattr           */
+    0,                                          /* tp_compare           */
+    0,                                          /* tp_repr              */
+    0,                                          /* tp_as_number         */
+    0,                                          /* tp_as_sequence       */
+    0,                                          /* tp_as_mapping        */
+    0,                                          /* tp_hash              */
+    0,                                          /* tp_call              */
+    0,                                          /* tp_str               */
+    0,                                          /* tp_getattro          */
+    0,                                          /* tp_setattro          */
+    0,                                          /* tp_as_buffer         */
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,   /* tp_flags             */
+    "UDT::TRACEINFO",                             /* tp_doc               */
+    0,                                          /* tp_traverse          */
+    0,                                          /* tp_clear             */
+    0,                                          /* tp_richcompare       */
+    0,                                          /* tp_weaklistoffset    */
+    0,                                          /* tp_iter              */
+    0,                                          /* tp_iternext          */
+    0,                                          /* tp_methods           */
+    0,                                          /* tp_members           */
+    pyudt4_perfmon_getset,                      /* tp_getset            */
+    0,                                          /* tp_base              */
+    0,                                          /* tp_dict              */
+    0,                                          /* tp_descr_get         */
+    0,                                          /* tp_descr_set         */
+    0,                                          /* tp_dictoffset        */
+    0,                                          /* tp_init              */
+    0,                                          /* tp_alloc             */
+    0,                                          /* tp_new               */
+};
+
 
 /* -------------------------------------------------------------------------- */
 static PyObject*
@@ -921,6 +1268,41 @@ pyudt4_recvfile(PyObject *py_self, PyObject *args)
 } 
 
 
+static PyObject* 
+pyudt4_perfmon(PyObject *self, PyObject *args) 
+{
+        pyudt4_socket_obj *sock = 0x0;
+        PyObject *clear = Py_True; 
+
+        if (!PyArg_ParseTuple(args, "O|O", &sock, &clear)) {
+                PyErr_SetString(
+                        PyExc_TypeError,
+                        "ERROR HERE__"
+                        );
+
+                return 0x0;
+        }
+        
+        pyudt4_perfmon_obj *perf = 
+                (pyudt4_perfmon_obj*)  _PyObject_New(&pyudt4_perfmon_type);
+
+        if (0x0 == perf) {
+                PyErr_SetString(
+                        PyExc_MemoryError, 
+                        "Failed to allocate UDT::TRACEINFO"
+                        );
+
+                return 0x0;
+        } 
+
+        if (UDT::ERROR == UDT::perfmon(sock->sock, &perf->trace, 
+                                       clear == Py_True)) 
+                RETURN_UDT_RUNTIME_ERROR;
+
+        return (PyObject*) perf;
+}
+
+
 static PyMethodDef pyudt4_module_methods[] = {
         {
                 "pyudt4_version",
@@ -1061,6 +1443,12 @@ static PyMethodDef pyudt4_module_methods[] = {
                 METH_VARARGS,
                 ""
         },
+        {
+                "perfmon",
+                (PyCFunction)pyudt4_perfmon,
+                METH_VARARGS,
+                ""
+        },
         { 0x0 }
 };
 
@@ -1086,8 +1474,20 @@ init_udt4()
         PyModule_AddObject(
                         m, "UDTException", pyudt4_exception_obj
                         );
+        
+        
+        if (PyType_Ready(&pyudt4_perfmon_type) < 0)
+                return;
 
+        pyudt4_perfmon_type.tp_new = PyType_GenericNew;  
+        Py_INCREF(&pyudt4_perfmon_type);
+        PyModule_AddObject(
+                m, "TRACEINFO", (PyObject*) &pyudt4_perfmon_type
+                );
+
+        
         pyudt4_socket_type   = initpyudt4_socket_type(m);
+        
         pyudt4_epoll_type    = initpyudt4_epoll_type(m, pyudt4_exception_obj);
         
         assert(0x0 != pyudt4_exception_obj);
@@ -1118,9 +1518,17 @@ init_udt4()
             PyModule_AddIntConstant(m, "UDT_EVENT"     , UDT_EVENT     ) < 0 ||
             PyModule_AddIntConstant(m, "UDT_SNDDATA"   , UDT_SNDDATA   ) < 0 ||
             PyModule_AddIntConstant(m, "UDT_RCVDATE"   , UDT_RCVDATA   ) < 0 
-           ) {
+           ) 
                 return;
-        }
+        
+        /* EPOLLOpt */
+        if (
+            PyModule_AddIntConstant(m, "UDT_EPOLL_IN"  , UDT_EPOLL_IN  ) < 0 ||
+            PyModule_AddIntConstant(m, "UDT_EPOLL_OUT" , UDT_EPOLL_OUT ) < 0 ||
+            PyModule_AddIntConstant(m, "UDT_EPOLL_ERR" , UDT_EPOLL_ERR ) < 0 
+           ) 
+                return;
+
 
         /* UDTSTATUS */
         if (
@@ -1133,10 +1541,10 @@ init_udt4()
             PyModule_AddIntConstant(m, "UDTSTATUS_CLOSING"   , CLOSING   ) < 0 ||
             PyModule_AddIntConstant(m, "UDTSTATUS_CLOSED"    , CLOSED    ) < 0 ||
             PyModule_AddIntConstant(m, "UDTSTATUS_NONEXIST"  , NONEXIST  ) < 0 
-            ) {
+            ) 
                 return;
-        }
-        
+       
+
         /* exception codes */
         using namespace UDT;
         if (
@@ -1212,9 +1620,8 @@ init_udt4()
                                 ERRORINFO::EPEERERR    ) < 0 || 
             PyModule_AddIntConstant(m, "EUNKNOWN",             
                                 ERRORINFO::EUNKNOWN    ) < 0 
-           ) {
+           ) 
                 return ;
-        }
 }
 
 #ifdef __cplusplus
