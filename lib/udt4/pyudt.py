@@ -10,7 +10,6 @@ UDT4 library and py-udt4 wrapper is licensed under BSD.
 
 """
 
-import os
 import socket as socklib
 import udt4 
 
@@ -54,14 +53,21 @@ class UdtSocket(object):
 
         """
         if _sock != None:
-            assert _sock.domain   == family
-            assert _sock.type     == type 
-            assert _sock.protocol == protocol
-
             self.__sock = _sock
         else:
             self.__sock = udt4.socket(family, type, protocol) 
+   
     
+    @staticmethod
+    def init_from_socket(sock):
+        """
+        Mappable static method to load a socket from an existing UDTSOCKET 
+
+        :param  sock:   Input socket to load into UdtSocket type 
+        :type   sock:   UDTSOCKET 
+        """
+        return UdtSocket(_sock = sock) 
+
 
     @property
     def family(self):
@@ -171,7 +177,7 @@ class UdtSocket(object):
 
 
     def fileno(self, udt_fileno = False):
-        # TODO: Find out how to find underlying UDP fileno from UDT fileno in lib
+        # TODO: Find out how to find underlying UDP fileno from UDT fileno in 
         """
         :param  udt_fileno: Return udt fileno instead of udp?
         :type   udt_fileno: bool() 
@@ -428,15 +434,99 @@ class UdtSocket(object):
 
 
 # -----------------------------------------------------------------------------#
-# EPOLL                                                                        # 
+# EPOLL                                                                        #
 
 class Epoll(object):
     """
-    :class Epoll 
+    :class Epoll: 
+
+    Epoll class to act on UdtSocket() class rather than the standard 
+    udt4.UDTepoll class which uses udt4.UDTSOCKET 
     """ 
 
-    def __init__(self):
-        pass         
+    @property 
+    def epoll(self):
+        """ 
+        :return: internal UDTepoll 
+        """ 
+        return self.__epoll 
 
+    def __init__(self, _epoll = None):
+        """
+        :param  _epoll: Initialize _epoll from existing class 
+        :type   _epoll: Epoll() 
+        """
+        if _epoll == None:
+            self.__epoll = _epoll.epoll 
+        else:
+            self.__epoll = udt4.UDTepoll()  
+       
 
+    def add_usock(self, udt_socket, events = 0x0):
+        """
+        :param  udt_socket: UDTSOCKET to add to epoll 
+        :type   udt_socket: UdtSocket()
 
+        :param  events:     Events to watch on 
+        :type   events:     int() 
+        """
+        return self.__epoll.add_usock(udt_socket.UDTSOCKET, events) 
+    
+
+    def add_ssock(self, sys_socket, events = 0x0):
+        """
+        :param  sys_socket: SYSSOCKET to add to epoll 
+        :type   sys_socket: int() 
+        
+        :param  events:     Ignored  
+        :type   events:     int() 
+        """
+        return self.__epoll.add_ssock(sys_socket, events) 
+
+    
+    def remove_usock(self, udt_socket, events = 0x0):
+        """
+        :param  udt_socket: UDTSOCKET to remove from 
+        :type   udt_socket: UdtSocket()          
+        
+        :param  events:     Events to remove from watch 
+        :type   events:     int() 
+        """
+        return self.__epoll.remove_usock(udt_socket.UDTSOCKET, events) 
+
+    
+
+    def remove_ssock(self, sys_socket, events = 0x0):
+        """
+        :param  sys_socket: SYSSOCKET to remove to epoll 
+        :type   sys_socket: int() 
+        
+        :param  events:     Ignored  
+        :type   events:     int() 
+        """
+        return self.__epoll.remove_ssock(sys_socket, events) 
+
+    
+    def wait(self, do_uread, do_uwrite, wait, do_sread = False, 
+             do_swrite = False):
+        """
+        :param do_uread:    Wait on a UDTSOCKET read event 
+        :type  do_uread:    bool() 
+
+        :param do_uwrite:   Wait on a UDTSOCKET write or error event 
+        :type  do_uwrite:   bool() 
+    
+        :param wait:        Wait time in milliseconds 
+        :param wait:        long() 
+
+        :param do_sread:    Wait on a SYSSOCKET read event 
+        :type  do_sread:    bool() 
+
+        :param do_swrite:   Wait on a SYSSOCKET write or error event 
+        :type  do_swrite:   bool() 
+        """
+        ret = self.__epoll.wait(do_uread, do_uwrite, wait, do_sread, do_swrite)
+        ret[0] = map(UdtSocket.init_from_socket, ret[0]) 
+        ret[1] = map(UdtSocket.init_from_socket, ret[1]) 
+
+        return ret
