@@ -4,18 +4,31 @@
 Python-style sockets wrapping the (nearly) straight C++ --> Python 
 implementation of module udt4.  All udt4 functions and constants are imported
 into this module.
+
+License:
+UDT4 library and py-udt4 wrapper is licensed under BSD.
+
 """
 
 import os
 import socket as socklib
 import udt4 
-from   udt4 import *
 
 __author__  = 'Christopher J. Hanks <develop@cjhanks.name>'
 __date__    = '12/15/2012' 
-__all__     = os._get_exports_list(udt4) + \
-              ['UdtSocket']
+__version__ = (0, 3) 
 
+# assert py-udt4 version is in sync with udt4.pyudt version
+# please read __init__.py for explanation of versiong schema  
+#
+if not __version__ == udt4.pyudt4_version():
+    version = udt4.pyudt4_version() 
+
+    raise ImportError(
+        'udt4.pyudt version expects version %i.%i and [_udt4.so] is %i.%i' % (
+            __version__[0], __version__[1], version[0], version[1]
+            )
+        )
 
 class UdtSocket(object):
     """ 
@@ -412,5 +425,18 @@ class UdtSocket(object):
             return udt4.sendfile(self.__sock, fd)
         else:
             return udt4.sendfile(self.__sock, fd.name)
+
+
+# -----------------------------------------------------------------------------#
+# EPOLL                                                                        # 
+
+class Epoll(object):
+    """
+    :class Epoll 
+    """ 
+
+    def __init__(self):
+        pass         
+
 
 

@@ -303,7 +303,6 @@ pyudt4_epoll_wait(pyudt4_epoll_obj *self, PyObject *args)
                              sset.read, sset.write);
 }
 
-
 static PyMethodDef pyudt4_epoll_methods[] = {
         {
                 "add_usock",
@@ -392,7 +391,7 @@ initpyudt4_epoll_type(PyObject *module, PyObject *exception_type)
         pyudt4_epoll_type.tp_new = PyType_GenericNew;
         Py_INCREF(&pyudt4_epoll_type);
         PyModule_AddObject(
-                module, "epoll", (PyObject*) &pyudt4_epoll_type
+                module, "UDTepoll", (PyObject*) &pyudt4_epoll_type
                 );
 
         return (PyTypeObject*) &pyudt4_epoll_type;        
