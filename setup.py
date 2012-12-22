@@ -40,6 +40,11 @@
 #   -----------------------------------------------------------------------
 #  
 
+VERSION = {
+        'major' : 0, 
+        'minor' : 3 
+        }
+
 from distutils.core import setup, Extension 
 
 udt4 = Extension(
@@ -53,21 +58,19 @@ udt4 = Extension(
         libraries       = ['udt', 'pthread'],
         library_dirs    = ['/usr/local/lib'],
         define_macros   = [ ('NDEBUG', 1), 
-                            ('MAJOR_VERSION', 0), 
-                            ('MINOR_VERSION', 3) 
+                            ('MAJOR_VERSION', VERSION['major']), 
+                            ('MINOR_VERSION', VERSION['minor']) 
                           ]
         )
 
 setup(
         name            = 'py-udt',
-        version         = '0.1',
+        version         = '%(major)i.%(minor)i' % VERSION,
         description     = 'Python bindings for UDT4',
         author          = 'Christopher J. Hanks',
         author_email    = 'develop@cjhanks.name',
         url             = 'http://cjhanks.name/projects/py-udt.php',
-        #py_modules      = ['pyudt4'],
         packages        = ['udt4'],
         package_dir     = { '' : 'lib' },
         ext_modules     = [udt4],
-
     ) 

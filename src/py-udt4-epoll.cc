@@ -139,7 +139,7 @@ pyudt4_epoll_add_ssock(pyudt4_epoll_obj *self, PyObject *args)
 
         if (!PyArg_ParseTuple(args, "i|i", &sock, &flag)) {
                 PyErr_SetString(PyExc_TypeError,
-                        "Invalid usock"
+                        "Invalid ssock"
                         );
 
                 return 0x0;
@@ -333,7 +333,7 @@ static PyMethodDef pyudt4_epoll_methods[] = {
                 (PyCFunction)pyudt4_epoll_add_ssock,
                 METH_VARARGS,
                 ":param:  socket        Socket to add   \n"
-                ":type:   socket        udt4.UDTSOCKET  \n"
+                ":type:   socket        int()           \n"
                 "\n"
                 ":param:  flags           \n"
                 ":type:   int()           \n"

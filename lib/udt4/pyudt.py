@@ -58,17 +58,6 @@ class UdtSocket(object):
             self.__sock = udt4.socket(family, type, protocol) 
    
     
-    @staticmethod
-    def init_from_socket(sock):
-        """
-        Mappable static method to load a socket from an existing UDTSOCKET 
-
-        :param  sock:   Input socket to load into UdtSocket type 
-        :type   sock:   UDTSOCKET 
-        """
-        return UdtSocket(_sock = sock) 
-
-
     @property
     def family(self):
         """ 
@@ -123,7 +112,10 @@ class UdtSocket(object):
 
         @return tuple( UdtSocket(sock), str(host) )
         """
-        return udt4.accept(self.__sock) 
+        accept = udt4.accept(self.__sock) 
+
+        return UdtSocket(_sock = accept[0]), accept[1] 
+
 
 
     def bind(self, address):
@@ -456,7 +448,7 @@ class Epoll(object):
         :param  _epoll: Initialize _epoll from existing class 
         :type   _epoll: Epoll() 
         """
-        if _epoll == None:
+        if _epoll != None:
             self.__epoll = _epoll.epoll 
         else:
             self.__epoll = udt4.UDTepoll()  
@@ -481,7 +473,7 @@ class Epoll(object):
         :param  events:     Ignored  
         :type   events:     int() 
         """
-        return self.__epoll.add_ssock(sys_socket, events) 
+        return self.__epoll.add_ssock(sys_socket.fileno(), events) 
 
     
     def remove_usock(self, udt_socket, events = 0x0):
@@ -504,7 +496,7 @@ class Epoll(object):
         :param  events:     Ignored  
         :type   events:     int() 
         """
-        return self.__epoll.remove_ssock(sys_socket, events) 
+        return self.__epoll.remove_ssock(sys_socket.fileno(), events) 
 
     
     def wait(self, do_uread, do_uwrite, wait, do_sread = False, 
@@ -524,9 +516,14 @@ class Epoll(object):
 
         :param do_swrite:   Wait on a SYSSOCKET write or error event 
         :type  do_swrite:   bool() 
-        """
-        ret = self.__epoll.wait(do_uread, do_uwrite, wait, do_sread, do_swrite)
-        ret[0] = map(UdtSocket.init_from_socket, ret[0]) 
-        ret[1] = map(UdtSocket.init_from_socket, ret[1]) 
 
-        return ret
+
+        """
+        ret = self.__epoll.wait(do_uread, do_uwrite, wait, do_sread, do_swrite) 
+        
+        return (
+                frozenset(map(lambda s: pyudt.UdtSocket(_sock = x), ret[0])),
+                frozenset(map(lambda s: pyudt.UdtSocket(_sock = x), ret[1])),
+                frozenset(map(lambda x: socklib.socket (_sock = x), ret[2])),
+                frozenset(map(lambda x: socklib.socket (_sock = x), ret[3]))
+                )
