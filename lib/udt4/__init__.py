@@ -36,4 +36,60 @@ from   _udt4 import *
 import pyudt
 
 __all__ = os._get_exports_list(_udt4) + \
-         ['UdtSocket']
+         ['UdtSocket', 'dump_perfmon', 'Epoll'] 
+
+
+def dump_perfmon(perf):
+    """
+    Prints out all of the perfmon features
+    """
+    print(
+'''
++ TRACEINFO ----------------- +
+| msTimeStamp         %Li 
+| pktSentTotal        %Li
+| pktRecvTotal        %Li 
+| pktSndLossTotal     %i 
+| pktRcvLossTotal     %i 
+| pktRetransTotal     %i 
+| pktSentACKTotal     %i 
+| pktRecvACKTotal     %i 
+| pktSentNAKTotal     %i 
+| pktRecvNAKTotal     %i 
+| --                    -
+| pktSent             %Li
+| pktRecv             %Li
+| pktSndLoss          %i 
+| pktRcvLoss          %i 
+| pktRetrans          %i 
+| pktSentACK          %i 
+| pktRecvACK          %i 
+| pktSentNAK          %i 
+| pktRecvNAK          %i 
+| mbpsSendRate        %f 
+| mbpsRecvRate        %f 
+| --                    -
+| usPktSndPeriod      %f 
+| pktFlowWindow       %i 
+| pktCongestionWindow %i 
+| pktFlightSize       %i 
+| msRTT               %f 
+| mbpsBandwidth       %f 
+| byteAvailSndBuf     %i 
+| byteAvailRcvBuf     %i 
++---------------------------- +
+''' % (perf.msTimeStamp    , perf.pktSentTotal   , perf.pktRecvTotal, 
+       perf.pktSndLossTotal, perf.pktRcvLossTotal, perf.pktRetransTotal,
+       perf.pktSentACKTotal, perf.pktRecvACKTotal, perf.pktSentNAKTotal,
+       perf.pktRecvNAKTotal, 
+
+       perf.pktSent        , perf.pktRecv        , perf.pktSndLoss,
+       perf.pktRcvLoss     , perf.pktRetrans     , perf.pktSentACK, 
+       perf.pktRecvACK     , perf.pktSentNAK     , perf.pktRecvNAK, 
+       perf.mbpsSendRate   , perf.mbpsRecvRate   ,
+
+       perf.usPktSndPeriod , perf.pktFlowWindow  , perf.pktCongestionWindow,
+       perf.pktFlightSize  , perf.msRTT          , perf.mbpsBandwidth,
+       perf.byteAvailSndBuf, perf.byteAvailRcvBuf 
+       )
+    )

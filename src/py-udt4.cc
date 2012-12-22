@@ -1117,7 +1117,7 @@ pyudt4_recv(PyObject *py_self, PyObject *args)
         if (!PyArg_ParseTuple(args, "Oi", &sock, &buf_len)) {
                 PyErr_SetString(
                         PyExc_TypeError,
-                        "arguments: [UDTSOCKET] [INT]" 
+                        "arguments: [UDTSOCKET] [INT LENGTH]" 
                         );
                 
                 return 0x0;
@@ -1285,7 +1285,7 @@ pyudt4_perfmon(PyObject *self, PyObject *args)
         
         pyudt4_perfmon_obj *perf = 
                 (pyudt4_perfmon_obj*)  _PyObject_New(&pyudt4_perfmon_type);
-
+         
         if (0x0 == perf) {
                 PyErr_SetString(
                         PyExc_MemoryError, 
@@ -1293,7 +1293,9 @@ pyudt4_perfmon(PyObject *self, PyObject *args)
                         );
 
                 return 0x0;
-        } 
+        } else {
+                Py_INCREF(perf);
+        }
 
         if (UDT::ERROR == UDT::perfmon(sock->sock, &perf->trace, 
                                        clear == Py_True)) 

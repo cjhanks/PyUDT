@@ -1,0 +1,10 @@
+
+Stage:
+
+0   -   Start UDT server socket     --> configure EPOLL
+1   -   Start TCP server socket     --> configure EPOLL 
+2   -   Subprocess a dozen clients to manage.  
+3   -   Ping-pong some connections. 
+
+
+
