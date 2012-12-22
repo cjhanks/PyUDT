@@ -181,7 +181,7 @@ class UdtSocket(object):
 
         @return underlying fileno ::int() 
         """
-        return self.__sock.sock 
+        return self.__sock.UDTSOCKET
         
 
 
@@ -242,6 +242,18 @@ class UdtSocket(object):
         natively supports a sendfile/recvfile option.
         """
         pass
+    
+
+    def perfmon(self, clear = True):
+        """
+        Garther a current performance status of socket. 
+
+        :param clear:   Clear history on checking 
+        :type  clear:   bool() 
+
+        :return:    udt4.TRACEINFO 
+        """
+        return udt4.perfmon(self.__sock, clear) 
 
 
     def sendall(self, data, flags = 0):
@@ -451,8 +463,22 @@ class Epoll(object):
         if _epoll != None:
             self.__epoll = _epoll.epoll 
         else:
-            self.__epoll = udt4.UDTepoll()  
-       
+            self.__epoll = udt4.UDTepoll() 
+        
+        # the socket.socket() library does not allow you to create an object  
+        # mapped to an existing fileno(), socket.fromfd(...) actually executes 
+        # a dup() on the socket, this may orphan the initial parent and leave
+        # fd's unclosed AND the dup'ed socket is not a valid entry in the epoll
+        # this keeps a map of socket.socket() --> fileno() entries to prevent
+        # the issue. 
+        self.__ssock_map = dict() 
+        
+        # since the UdtSocket() class closes its underling socket on __del__()
+        # we track the entry locally and remove it when all flags are removed 
+        # from the watch. 
+        self.__usock_map = dict() 
+
+
 
     def add_usock(self, udt_socket, events = 0x0):
         """
@@ -462,6 +488,8 @@ class Epoll(object):
         :param  events:     Events to watch on 
         :type   events:     int() 
         """
+        self.__usock_map[udt_socket.UDTSOCKET] = udt_socket 
+
         return self.__epoll.add_usock(udt_socket.UDTSOCKET, events) 
     
 
@@ -473,6 +501,9 @@ class Epoll(object):
         :param  events:     Ignored  
         :type   events:     int() 
         """
+        if not sys_socket.fileno() in self.__ssock_map:
+            self.__ssock_map[sys_socket.fileno()] = sys_socket
+
         return self.__epoll.add_ssock(sys_socket.fileno(), events) 
 
     
@@ -484,8 +515,12 @@ class Epoll(object):
         :param  events:     Events to remove from watch 
         :type   events:     int() 
         """
-        return self.__epoll.remove_usock(udt_socket.UDTSOCKET, events) 
-
+        ret = self.__epoll.remove_usock(udt_socket.UDTSOCKET, events) 
+        
+        if 0x0 == ret:
+            del(self.__usock_map[udt_socket.UDTSOCKET]) 
+        
+        return ret 
     
 
     def remove_ssock(self, sys_socket, events = 0x0):
@@ -496,7 +531,12 @@ class Epoll(object):
         :param  events:     Ignored  
         :type   events:     int() 
         """
-        return self.__epoll.remove_ssock(sys_socket.fileno(), events) 
+        assert sys_socket.fileno() in self.__ssock_map, \
+                'pyudt library error : socket should be in map' 
+
+        del(self.__ssock_map[sys_socket.fileno()])
+
+        return self.__epoll.remove_ssock(sys_socket.fileno()) 
 
     
     def wait(self, do_uread, do_uwrite, wait, do_sread = False, 
@@ -521,9 +561,9 @@ class Epoll(object):
         """
         ret = self.__epoll.wait(do_uread, do_uwrite, wait, do_sread, do_swrite) 
         
-        return (
-                frozenset(map(lambda s: pyudt.UdtSocket(_sock = x), ret[0])),
-                frozenset(map(lambda s: pyudt.UdtSocket(_sock = x), ret[1])),
-                frozenset(map(lambda x: socklib.socket (_sock = x), ret[2])),
-                frozenset(map(lambda x: socklib.socket (_sock = x), ret[3]))
-                )
+        return  (
+            frozenset(map(lambda s: self.__usock_map[s] , ret[0])),
+            frozenset(map(lambda s: self.__usock_map[s] , ret[1])),
+            frozenset(map(lambda s: self.__ssock_map[s] , ret[2])),
+            frozenset(map(lambda s: self.__ssock_map[s] , ret[3]))
+            ) 

@@ -1,0 +1,5 @@
+
+This example launches a single client/server connection and then executes 
+a simultaneous duplex sending and receiving 128 mb from each other.
+
+At the beginning and end on the client side the perfmon is dumped.

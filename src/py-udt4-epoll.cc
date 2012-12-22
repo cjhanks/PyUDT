@@ -198,19 +198,19 @@ static PyObject*
 pyudt4_epoll_remove_ssock(pyudt4_epoll_obj *self, PyObject *args)
 {
         int sock;
-        int flag = 0x0;
 
-        if (!PyArg_ParseTuple(args, "i|i", &sock, &flag)) {
+        if (!PyArg_ParseTuple(args, "i", &sock)) {
                 PyErr_SetString(PyExc_TypeError,
                         "Invalid usock"
                         );
 
                 return 0x0;
         }
-
-        if (UDT::ERROR == UDT::epoll_add_ssock(self->eid, sock, &flag))
-                RETURN_UDT_RUNTIME_ERROR;
         
+        if (UDT::ERROR == UDT::epoll_remove_ssock(self->eid, sock)) 
+                RETURN_UDT_RUNTIME_ERROR;
+       
+
         Py_RETURN_NONE;
 }
 
