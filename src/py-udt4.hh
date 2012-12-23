@@ -32,8 +32,6 @@
                 UDT::getlasterror().clear();\
                 \
                 PyErr_SetObject(pyudt4_exception_obj, __obj);\
-                \
-                Py_DECREF(__obj);\
                 return 0x0;\
         } while (0)
 

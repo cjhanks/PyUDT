@@ -17,17 +17,26 @@ udt4
          +-- .UdtSocket()   : Python style socket wrapper around UDTSOCKET  
          |
          +-- .Epoll()       : Epoll implementation to be used with UdtSocket()
+
 --------------------------------------------------------------------------------
-
 Versioning:
+Releases are done in {MAJOR}.{MINOR} of py-udt version.  All function 
+signatures are back-compatible on major and minor releases.
 
+If and when UDT releases udt5, the py-udt library will be ported to v5, and 
+the py-udt4 will remain supported independently. 
 
+--------------------------------------------------------------------------------
 License:
 UDT4 library and py-udt4 wrapper is licensed under BSD.
+
+--------------------------------------------------------------------------------
 """
 
 __author__  = 'Christopher J. Hanks <develop@cjhanks.name>'
 __date__    = '12/18/2012' 
+__license__ = 'GPLv3' 
+
 
 import os 
 

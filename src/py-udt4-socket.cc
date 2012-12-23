@@ -23,7 +23,8 @@ pyudt4_socket_init(PyTypeObject *type)
         self->domain   = 0;
         self->type     = 0;
         self->protocol = 0;
-        
+        self->valid    = 0;
+
         return (PyObject*)self;
 }
 

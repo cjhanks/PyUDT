@@ -1,0 +1,2 @@
+This tests all sock-options to insure their set value is the same 
+as their getopt returns.
