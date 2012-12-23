@@ -1567,10 +1567,8 @@ init_udt4()
                 return;
        
         /* add exception */
-        pyudt4_exception_obj = PyErr_NewExceptionWithDoc(
+        pyudt4_exception_obj = PyErr_NewException(
                                         (char*) "udt4.UDTException", 
-                                        "UDTException maps to tuple of type   "
-                                        "tuple( int(errcode), str(errstring) )",
                                         PyExc_RuntimeError,     0x0
                                         );
         Py_INCREF(pyudt4_exception_obj); 
