@@ -306,6 +306,7 @@ class UdtSocket(object):
 
         Sets a socket option to the specified type.
         """
+        print(option, value) 
         udt4.setsockopt(self.__sock, option, value)
 
     
@@ -325,6 +326,7 @@ class UdtSocket(object):
         else:
             self.setsockopt(udt4.UDT_SNDTIMEO, timeo)
             self.setsockopt(udt4.UDT_RCVTIMEO, timeo)
+
 
     def shutdown(self, flags):
         """

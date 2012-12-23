@@ -114,11 +114,11 @@ pyudt4_perfmon_pktRecvNAK(pyudt4_perfmon_obj *self)
 
 static PyObject*
 pyudt4_perfmon_mbpsSendRate(pyudt4_perfmon_obj *self)
-{       return Py_BuildValue("d", self->trace.mbpsSendRate);    }
+{       return Py_BuildValue("f", self->trace.mbpsSendRate);    }
 
 static PyObject*
 pyudt4_perfmon_mbpsRecvRate(pyudt4_perfmon_obj *self)
-{       return Py_BuildValue("d", self->trace.mbpsRecvRate);    }
+{       return Py_BuildValue("f", self->trace.mbpsRecvRate);    }
 
 static PyObject*
 pyudt4_perfmon_usPktSndPeriod(pyudt4_perfmon_obj *self)
@@ -138,11 +138,11 @@ pyudt4_perfmon_pktFlightSize(pyudt4_perfmon_obj *self)
 
 static PyObject*
 pyudt4_perfmon_msRTT(pyudt4_perfmon_obj *self)
-{       return Py_BuildValue("d", self->trace.msRTT);           }
+{       return Py_BuildValue("f", self->trace.msRTT);           }
 
 static PyObject*
 pyudt4_perfmon_mbpsBandwidth(pyudt4_perfmon_obj *self)
-{       return Py_BuildValue("d", self->trace.mbpsBandwidth);   }
+{       return Py_BuildValue("f", self->trace.mbpsBandwidth);   }
 
 static PyObject*
 pyudt4_perfmon_byteAvailSndBuf(pyudt4_perfmon_obj *self)
@@ -476,11 +476,12 @@ pyudt4_bind(PyObject *py_self, PyObject *args)
         sock_addr.sin_port   = htons(port);
 
         memset(&sock_addr.sin_zero, '\0', sizeof(sock_addr.sin_zero));
-
+ 
         if (UDT::ERROR == UDT::bind(sock->sock, (sockaddr*) &sock_addr,
                                     sizeof(sock_addr))) 
                 RETURN_UDT_RUNTIME_ERROR;
 
+        sock->valid = 1;
 
         return Py_BuildValue("i", 0);
 }
@@ -551,6 +552,7 @@ pyudt4_accept(PyObject *py_self, PyObject *args)
         client_sock->domain   = sock->domain;
         client_sock->type     = sock->type;
         client_sock->protocol = sock->protocol;
+        client_sock->valid    = 1;
         
         char client_host[NI_MAXHOST];
         char client_srvc[NI_MAXSERV];
@@ -611,6 +613,7 @@ pyudt4_connect(PyObject *py_self, PyObject *args)
                                        sizeof(serv)))
                 RETURN_UDT_RUNTIME_ERROR;
         
+        sock->valid = 1;
         
         return Py_BuildValue("i", 0);
 }
@@ -629,8 +632,13 @@ pyudt4_close(PyObject *py_self, PyObject *args)
                 
                 return 0x0;
         } 
+        
+        /* closing on invalid socket causes SIGSEGV */
+        if (sock->valid)
+                return Py_BuildValue("i", UDT::close(sock->sock));
+        else 
+                return Py_BuildValue("i", -1);
 
-        return Py_BuildValue("i", UDT::close(sock->sock));
 } 
 
 
@@ -721,24 +729,23 @@ pyudt4_setsockopt(PyObject *py_self, PyObject *args)
         
         int          optname_i;
         UDT::SOCKOPT optname;
-        long         optval_o;
+        PyObject    *bogus_opt;
          
-        if (!PyArg_ParseTuple(args, "Oil", &sock, &optname_i, &optval_o)) {
+        if (!PyArg_ParseTuple(args, "OiO", &sock, &optname_i, &bogus_opt)) {
                 PyErr_SetString(
                         PyExc_TypeError,
-                        "arguments: [UDTSOCKET] [OPTION] [OPTVALUE]"
+                        "arguments: [UDTSOCKET] [OPTION]"
                         );
                 
-                return Py_BuildValue("i", 1);
+                return 0x0;  
         } else {
                 optname = (UDT::SOCKOPT) optname_i;
         }
         
-        //DEBUG("here\n");
-        
+        /* switch opt name */
         switch (optname) {
         
-        /* int cases */
+        // -- int() 
         case UDT_MSS     :
         case UDT_FC      :
         case UDT_SNDBUF  :
@@ -746,99 +753,115 @@ pyudt4_setsockopt(PyObject *py_self, PyObject *args)
         case UDP_SNDBUF  :
         case UDP_RCVBUF  :
         case UDT_SNDTIMEO:
-        case UDT_RCVTIMEO:
-        case UDT_MAXBW   : {
+        case UDT_RCVTIMEO: {
+                if (!PyInt_Check(bogus_opt)) {
+                        PyErr_SetString(
+                                PyExc_TypeError,
+                                "Option value should be of type bool()"
+                                );
 
-                if (UDT_MAXBW == optname) {
-                        long optval = optval_o;
-                        if (
-                            UDT::ERROR == 
-                            (rc = UDT::setsockopt(sock->sock, 0, optname, 
-                                                  &optval, sizeof(long)))
-                            ) 
-                                RETURN_UDT_RUNTIME_ERROR;
-                } else {
-                        int optval = optval_o; 
-
-                        if (
-                            UDT::ERROR == 
-                            (rc = UDT::setsockopt(sock->sock, 0, optname, 
-                                                  &optval, sizeof(int)))
-                            ) {
-                                RETURN_UDT_RUNTIME_ERROR;
-                        }
+                        return 0x0;
                 }
-        
-                return Py_BuildValue("i", rc);
-        }
+                
+                int optval = PyInt_AsLong(bogus_opt);
+                
+                if (UDT::ERROR == (rc = UDT::setsockopt(sock->sock, 0, optname, 
+                                                        &optval, sizeof(int)))
+                   ) {
+                        RETURN_UDT_RUNTIME_ERROR;
+                }
 
+                break;
+        }
+        
+        // -- long() 
+        case UDT_MAXBW   : {
+                if (!PyLong_Check(bogus_opt)) {
+                        PyErr_SetString(
+                                PyExc_TypeError,
+                                "Option value should be of type long()"
+                                );
+
+                        return 0x0;
+                }
+                
+                long optval = PyInt_AsLong(bogus_opt);
+               
+                if (UDT::ERROR == (rc = UDT::setsockopt(sock->sock, 0, optname, 
+                                                        &optval, sizeof(long)))
+                   ) {
+                        RETURN_UDT_RUNTIME_ERROR;
+                }
+
+                break;
+        }
+        
+        // -- bool() 
         case UDT_SNDSYN    :
         case UDT_RCVSYN    :
         case UDT_RENDEZVOUS:
         case UDT_REUSEADDR : {
-                PyObject *py_optval;        
-                bool optval;
-               
-                if (!PyArg_ParseTuple(args, "OiO", &sock, &optname_i, 
-                                      &py_optval)) {
+                if (!PyBool_Check(bogus_opt)) {
                         PyErr_SetString(
                                 PyExc_TypeError,
-                                "invalid arguments for [OiO]" 
+                                "Option value should be of type bool()"
                                 );
-                        return Py_BuildValue("i", -1);
-                }
 
-                if      (Py_True  == py_optval) {
-                        optval = true;
-                } else if (Py_False == py_optval) {
-                        optval = false;
-                } else {
-                        PyErr_SetString(
-                                PyExc_ValueError,
-                                "3rd option must be of bool type"
-                                );
-                        return Py_BuildValue("i", -1);
-                }
-
-                if (UDT::ERROR == (rc = UDT::setsockopt(sock->sock, 0, optname,
-                                                        &optval, sizeof(bool))))
-                        RETURN_UDT_RUNTIME_ERROR;
-                
-                return Py_BuildValue("i", rc); 
-        }
-
-        case UDT_LINGER: {
-                linger optval;
-
-                if (!PyArg_ParseTuple(args, "Oiii", &sock, 0, 
-                                      &optval.l_onoff, &optval.l_linger)) {
-                        PyErr_SetString(
-                                PyExc_TypeError,
-                                "invalid arguments for linger" 
-                                );
-                        
                         return 0x0;
                 }
 
+                bool optval = (Py_True == bogus_opt);
+
                 if (UDT::ERROR == (rc = UDT::setsockopt(sock->sock, 0, optname,
-                                                     &optval, sizeof(optval))))
+                                                        &optval, sizeof(bool)))
+                   ) {
                         RETURN_UDT_RUNTIME_ERROR;
+                }
 
-                return Py_BuildValue("i", rc);
+                break;
         }
+        
+        // -- tuple() 
+        case UDT_LINGER: {
+                linger optval;
+                
+                if (! PyTuple_CheckExact(bogus_opt)) {
+                        PyErr_SetString(
+                                PyExc_TypeError,
+                                "Value must be of type tuple() for linger"
+                                );
 
+                        return 0x0; 
+                } else {
+                        optval.l_onoff  = PyInt_AsLong(
+                                                 PyTuple_GetItem(bogus_opt, 0)
+                                                 );
+                        optval.l_linger = PyInt_AsLong(
+                                                 PyTuple_GetItem(bogus_opt, 1)
+                                                 );
+                }
+
+                if (UDT::ERROR == (rc = UDT::setsockopt(sock->sock, 0, optname,
+                                                     &optval, sizeof(optval)))
+                   ) {
+                        RETURN_UDT_RUNTIME_ERROR;
+                }
+
+                break;
+        }
+        
+        // -- error 
         default: {
                 PyErr_SetString(
-                        PyExc_ValueError,
-                        "invalid option name"  
+                        PyExc_ValueError, "invalid option name to setsockopt()"  
                         );
                 
                 return 0x0;
         }
         }
-        
-        return Py_BuildValue("i", -1);
 
+
+        return Py_BuildValue("i", rc);
 } 
 
 
