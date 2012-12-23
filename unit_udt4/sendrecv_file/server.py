@@ -55,7 +55,7 @@ def recv_file(sock):
 def main(settings):
     udt4.startup() 
 
-    if not create_server('', settings['port']):
+    if not create_server(settings['host'], settings['port']):
         print('failed to create_server')
         return 0
     else:

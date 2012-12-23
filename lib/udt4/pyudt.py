@@ -19,7 +19,6 @@ __version__ = (0, 3)
 
 # assert py-udt4 version is in sync with udt4.pyudt version
 # please read __init__.py for explanation of versiong schema  
-#
 if not __version__ == udt4.pyudt4_version():
     version = udt4.pyudt4_version() 
 
@@ -151,11 +150,16 @@ class UdtSocket(object):
         """
         Like UdtSocket.connect() except any Errors are caught and returned as
         error codes.
+
+        :return: UDT exception 
+        :type  : int() 
         """
         try:
             self.connect(address)
-        except RuntimeError as err:
-            return 1 # TODO: get exception error code 
+        except udt4.UDTException as err:
+            return err[0] 
+        
+        return 0 
 
 
     def dup(self):
@@ -169,20 +173,10 @@ class UdtSocket(object):
 
 
     def fileno(self, udt_fileno = False):
-        # TODO: Find out how to find underlying UDP fileno from UDT fileno in 
         """
-        :param  udt_fileno: Return udt fileno instead of udp?
-        :type   udt_fileno: bool() 
-        
-        Return the underlying fileno of the socket.  Since UDT is actually a 
-        library wrapper for UDP the underlying socket has two id's.  The udt 
-        fileno (which is more or less worthless) and the UDP fileno which is
-        the default return.
-
-        @return underlying fileno ::int() 
+        Return the associated UDTSOCKET instance.  
         """
         return self.__sock.UDTSOCKET
-        
 
 
     def getpeername(self):
@@ -217,12 +211,11 @@ class UdtSocket(object):
    
     def gettimeout(self):
         """
-        Always asserts an error since no such feature exists in UDT.
+        :return:    The send-timeout and recv-timeout 
+        :type  :    tuple( int(), int() )
         """
-        # TODO: rather than assert, probably return -1 
-        assert False, 'gettimeout feature does not exist for UDT sockets '     \
-                      'sockoptions SND_TIMEO and RCV_TIMEO are the preferred ' \
-                      'method'
+        return tuple(self.getsockopt(udt4.UDT_SNDTIMEO),
+                     self.getsockopt(udt4.UDT_RCVTIMEO))
 
 
     def listen(self, backlog):
@@ -332,8 +325,10 @@ class UdtSocket(object):
         """
         No such feature exists within UDT
         """
-        pass
-    
+        print(
+            'WARNING: shutdown() does not exist in UDT4'
+            )
+
 
     def recv(self, size):
         """
@@ -343,7 +338,6 @@ class UdtSocket(object):
         """
         return udt4.recv(self.__sock, size)
         
-
     
     def recvfrom(self, size):
         """
@@ -457,6 +451,7 @@ class Epoll(object):
         """ 
         return self.__epoll 
 
+
     def __init__(self, _epoll = None):
         """
         :param  _epoll: Initialize _epoll from existing class 
@@ -479,7 +474,6 @@ class Epoll(object):
         # we track the entry locally and remove it when all flags are removed 
         # from the watch. 
         self.__usock_map = dict() 
-
 
 
     def add_usock(self, udt_socket, events = 0x0):
@@ -564,8 +558,8 @@ class Epoll(object):
         ret = self.__epoll.wait(do_uread, do_uwrite, wait, do_sread, do_swrite) 
         
         return  (
-            frozenset(map(lambda s: self.__usock_map[s] , ret[0])),
-            frozenset(map(lambda s: self.__usock_map[s] , ret[1])),
-            frozenset(map(lambda s: self.__ssock_map[s] , ret[2])),
-            frozenset(map(lambda s: self.__ssock_map[s] , ret[3]))
+            frozenset(map(lambda s: self.__usock_map[s], ret[0])),
+            frozenset(map(lambda s: self.__usock_map[s], ret[1])),
+            frozenset(map(lambda s: self.__ssock_map[s], ret[2])),
+            frozenset(map(lambda s: self.__ssock_map[s], ret[3]))
             ) 
