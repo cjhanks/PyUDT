@@ -2,30 +2,7 @@ PyUDT
 =====
 
 ## About  
-The py-udt4 library is segmented into two primary imports.
-
-### udt4 
-```python 
-import udt4
-```
-
-This imports the Python UDT library which most closely mocks the C++ api.  All 
-functions returned by reference / pointer instead use the Python convention of
-returning by tuple().  `pydoc udt4` documents the paramater and return types.
-
-
-### pyudt 
-```python 
-import udt4 as udt 
-import udt4.pyudt as pyudt
-``` 
-
-The udt4 import is required for access to the enumerators and instance constants
-associated with the UDT library.
-
-The pyudt implementation create UdtSocket() instances which more closely resemble
-the python socket.socket() implementation.  It also includes Epoll classes which 
-are more 'pythonic' in interface.  See `pydoc udt4.pyudt` for documentation.
+This extension is a C++ extension to CPython. And is tested on Linux only.
 
 
 ## Boot-strap 
@@ -37,21 +14,62 @@ edit the setup.py for the linking step.
 
 ```
 #
-# pwd 
-# .../PyUDT/ 
 # ls 
-# .. .. setup.py .. .. 
+# setup.py README.md lib example ... 
 # 
 git submodule init 
 git submodule update 
 
+# move library and headers to appropriate location 
 pushd udt/UDT4 
 make
 make install 
+sudo cp src/libudt.{so,a} /usr/lib64/   # or /usr/lib/ on 32 it
+sudo cp src/udt /usr/include/ 
 popd 
 
+# build extension 
 python setup.py build 
 sudo python setup.py install 
 ```
+
+
+## The Basics 
+`pydoc udt4` and `pydoc udt4.pyudt` are the best sources for documentation.
+
+The library is separated into two primary parts:
+
+* Content imported from udt4 interface with the udt4.UDTSOCKET type which is a direct
+representation of the UDTSOCKET C-type and is not callable, but is rather the first 
+argument on most udt4 functions. All function signatures attempt to more closely match
+the C-api interface.
+
+* Content imported from udt4.pyudt attempts to match the socket.socket() interface 
+provided by the standard library.  The class wraps the udt4.UDTSOCKET type. 
+
+
+## Classes:
+
+___udt4.TRACEINFO__
+```
+Please see UDT::TRACEINFO in C-api or pydoc udt4.TRACEINFO for all members.  
+```
+
+__udt4.UDTSOCKET__ 
+```
+.
+```
+
+
+### Sockets:
+
+__udt4.UDTSOCKET__ 
+
+
+
+__udt4.pyudt__
+
+
+
 
 

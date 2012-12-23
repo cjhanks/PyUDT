@@ -185,7 +185,6 @@ pyudt4_perfmon_byteAvailRcvBuf(pyudt4_perfmon_obj *self)
 {       return Py_BuildValue("i", self->trace.byteAvailRcvBuf); }
 
 
-
 static PyGetSetDef pyudt4_perfmon_getset[] = {
         {
                 (char*)  "msTimeStamp",
@@ -442,7 +441,7 @@ pyudt4_socket(PyObject *py_self, PyObject *args)
         if (!PyArg_ParseTuple(args, "iii", &domain, &type, &protocol)) { 
                 PyErr_SetString(
                         PyExc_TypeError,
-                        "arguments: [domain = AF_INET] [type] [protocol]"
+                        "arguments: [domain => AF_INET] [type] [protocol]"
                         );
                 return 0x0;
         }
@@ -499,7 +498,7 @@ pyudt4_bind(PyObject *py_self, PyObject *args)
         if (inet_pton(sock->domain, address, &sock_addr.sin_addr) == 0) {
                 PyErr_SetString(
                         PyExc_ValueError,
-                        "invalid address (invalid inet_pton(...)"
+                        "invalid address failed inet_pton(...)"
                         );
                 
                 return 0x0;
@@ -511,9 +510,9 @@ pyudt4_bind(PyObject *py_self, PyObject *args)
         memset(&sock_addr.sin_zero, '\0', sizeof(sock_addr.sin_zero));
 
         if (UDT::ERROR == UDT::bind(sock->sock, (sockaddr*) &sock_addr,
-                                    sizeof(sock_addr))) {
+                                    sizeof(sock_addr))) 
                 RETURN_UDT_RUNTIME_ERROR;
-        }
+
 
         return Py_BuildValue("i", 0);
 }
@@ -557,7 +556,7 @@ pyudt4_accept(PyObject *py_self, PyObject *args)
         if (!PyArg_ParseTuple(args, "O", &sock)) {
                 PyErr_SetString(
                         PyExc_TypeError,
-                        "arguments: [UDTSOCKET] [backlog]"
+                        "arguments: [UDTSOCKET]"
                         );
                 
                 return 0x0;
@@ -572,9 +571,9 @@ pyudt4_accept(PyObject *py_self, PyObject *args)
         client = UDT::accept(sock->sock, (sockaddr*) &client_stg, &addr_len);
         Py_END_ALLOW_THREADS;
 
-        if (UDT::INVALID_SOCK == client) {
+        if (UDT::INVALID_SOCK == client) 
                 RETURN_UDT_RUNTIME_ERROR;
-        } 
+        
 
         /* create a socket */
         pyudt4_socket_obj *client_sock = 
@@ -590,12 +589,20 @@ pyudt4_accept(PyObject *py_self, PyObject *args)
 
         memset(client_host, '\0', sizeof(client_host));
         memset(client_srvc, '\0', sizeof(client_srvc));
-
-        getnameinfo((sockaddr*) &client_stg, addr_len, 
-                    client_host, sizeof(client_host) , 
-                    client_srvc, sizeof(client_srvc) ,
-                    NI_NUMERICHOST|NI_NUMERICSERV);
         
+        /* get hostname to return back */
+        if (getnameinfo((sockaddr*) &client_stg, addr_len, 
+                        client_host, sizeof(client_host) , 
+                        client_srvc, sizeof(client_srvc) , 
+                        NI_NUMERICHOST | NI_NUMERICSERV  )) {
+                PyErr_SetString(
+                        PyExc_RuntimeError, "Failed to get the client host info"
+                        );
+
+                return 0x0; 
+        }
+       
+
         return Py_BuildValue("Os", (PyObject*) client_sock, client_host); 
 }
 
@@ -611,7 +618,7 @@ pyudt4_connect(PyObject *py_self, PyObject *args)
         if (!PyArg_ParseTuple(args, "Osi", &sock, &host, &port)) {
                 PyErr_SetString(
                         PyExc_TypeError,
-                        "arguments: [UDTSOCKET]"
+                        "arguments: [UDTSOCKET] [PORT]"
                         );
 
                 return 0x0; 
@@ -633,9 +640,9 @@ pyudt4_connect(PyObject *py_self, PyObject *args)
         }        
         
         if (UDT::ERROR == UDT::connect(sock->sock, (sockaddr*) &serv, 
-                                       sizeof(serv))) {
+                                       sizeof(serv)))
                 RETURN_UDT_RUNTIME_ERROR;
-        }
+        
         
         return Py_BuildValue("i", 0);
 }
@@ -677,9 +684,9 @@ pyudt4_getpeername(PyObject *py_self, PyObject *args)
         int addr_len = sizeof(client_stg);
 
         if (UDT::ERROR == UDT::getpeername(sock->sock, (sockaddr*) &client_stg,
-                                           &addr_len)) {
+                                           &addr_len))
                 RETURN_UDT_RUNTIME_ERROR;
-        }
+        
 
         char client_host[NI_MAXHOST];
         char client_srvc[NI_MAXSERV];
@@ -1127,8 +1134,7 @@ pyudt4_recv(PyObject *py_self, PyObject *args)
 
         if (0x0 == buf) {
                 PyErr_SetString(
-                        PyExc_RuntimeError, 
-                        "memory allocation error"
+                        PyExc_MemoryError, "memory allocation error"
                         );
 
                 return 0x0;
@@ -1377,79 +1383,177 @@ static PyMethodDef pyudt4_module_methods[] = {
                 "connect",
                 (PyCFunction)pyudt4_connect,
                 METH_VARARGS,
-                ""
+                "Connect socket to host, port           \n"
+                "\n"
+                ":param socket: Socket to act on        \n"
+                ":type  socket: UDTSOCKET               \n"
+                "\n"
+                ":param host:   IP host to connect to   \n"
+                ":type  host:   str()                   \n"
+                "\n"
+                ":param port:   Port to connect to.     \n"
+                ":type  port:   int()                   \n"
         },
         {
                 "close",
                 (PyCFunction)pyudt4_close,
                 METH_VARARGS,
-                ""
+                "Close the socket                       \n"
+                "\n"
+                ":param socket: Socket to act on        \n"
+                ":type  socket: UDTSOCKET               \n"
         },
         {
                 "getpeername",
                 (PyCFunction)pyudt4_getpeername,
                 METH_VARARGS,
-                ""
+                "Get the peername information for a connected socket \n" 
+                "\n"
+                ":param socket: Socket to act on        \n"
+                ":type  socket: UDTSOCKET               \n"
+                "\n"
+                ":return: host, port \n"
+                ":type:   str(),int()\n"
         },
         {
                 "getsockname",
                 (PyCFunction)pyudt4_getsockname,
                 METH_VARARGS,
-                ""
+                "Get the socket information for a connected socket \n" 
+                "\n"
+                ":param socket: Socket to act on        \n"
+                ":type  socket: UDTSOCKET               \n"
+                "\n"
+                ":return: host, port \n"
+                ":type:   str(),int()\n"
+                
         },
         {
                 "setsockopt",
                 (PyCFunction)pyudt4_setsockopt,
                 METH_VARARGS,
-                ""
+                "Set a socket option value.                     \n"
+                "\n"
+                ":param socket: Socket to act on                \n"
+                ":type  socket: UDTSOCKET                       \n"
+                "\n"
+                ":param option: enumerated option to be setting \n"
+                ":type  option: int()                           \n"
+                "\n"
+                ":param optval: Value to set option to          \n"
+                ":type  optval: int(), long(), bool(), tuple()  \n"
         },
         {
                 "getsockopt",
                 (PyCFunction)pyudt4_getsockopt,
                 METH_VARARGS,
-                ""
+                "Get a socket option value.                     \n"
+                "\n"
+                ":param socket: Socket to act on                \n"
+                ":type  socket: UDTSOCKET                       \n"
+                "\n"
+                ":param option: enumerated option to be getting \n"
+                ":type  option: int()                           \n"
+                "\n"
+                ":return:       Value associated with option    \n"
+                ":type  :       int(), long(), bool(), tuple()  \n" 
         },
         {
                 "send",
                 (PyCFunction)pyudt4_send,
                 METH_VARARGS,
                 ""
+                "\n"
+                ":param socket: Socket to act on                \n"
+                ":type  socket: UDTSOCKET                       \n"
+                "\n"
+                ":param buf:    Write buffer                    \n"
+                ":type  buf:    str()                           \n"
+                "\n"
+                ":param len:    Length of the incoming buffer   \n"
+                ":type  len:    int()                           \n"
+                "\n"
+                ":param pad:    Total send size (fix message on to pad of \n" 
+                "               this size)\n"
+                ":type  pad:    int()" 
         },
         {
                 "recv",
                 (PyCFunction)pyudt4_recv,
                 METH_VARARGS,
                 ""
+                "\n"
+                ":param socket: Socket to act on                \n"
+                ":type  socket: UDTSOCKET                       \n"
+                "\n"
+                ":param len   : Number of bytes to read         \n"
+                ":type  len   : int()                           \n"
+                "\n"
+                ":return: Read-in data \n"
+                ":type  : str()" 
         },
         {
                 "sendmsg",
                 (PyCFunction)pyudt4_sendmsg,
                 METH_VARARGS,
-                ""
+                 "\n"
+                ":param socket:   Socket to act on                \n"
+                ":type  socket:   UDTSOCKET                       \n"
+                "\n"
+                ":param buf:      Write buffer                    \n"
+                ":type  buf:      str()                           \n"
+                "\n"
+                ":param len:      Length of the incoming buffer   \n"
+                ":type  len:      int()                           \n"
+                "\n"
+                ":param pad:      Total send size (fix message on to pad of \n" 
+                "                 this size)\n"
+                ":type  pad:      int()     \n"
+                "\n"
+                ":param ttl:      Time-to-live of message on MS   \n"
+                ":type  ttl:      int()                           \n"
+                "\n"
+                ":param inorder:  Send the data in order?        \n"
+                ":type  inorder:  bool()                         \n"
         },
         {
                 "recvmsg",
                 (PyCFunction)pyudt4_recvmsg,
                 METH_VARARGS,
                 ""
+                ":param socket:   Socket to act on                \n"
+                ":type  socket:   UDTSOCKET                       \n"
+                "\n"
+                ":param len:      Number of bytes to read in      \n"
+                ":type  len:      int()                           \n"
+                "\n"
+                ":return:       The received message \n"
+                ":type  :       str()                \n"
+
         },
         {
                 "sendfile",
                 (PyCFunction)pyudt4_sendfile,
                 METH_VARARGS,
-                ""
+                "Only semi-implemented: DO NOT USE"
         },
         {
                 "recvfile",
                 (PyCFunction)pyudt4_recvfile,
                 METH_VARARGS,
-                ""
+                "Only semi-implemented: DO NOT USE"
         },
         {
                 "perfmon",
                 (PyCFunction)pyudt4_perfmon,
                 METH_VARARGS,
-                ""
+                "Return the TRACEINFO structure associated with the socket \n"
+                "\n"
+                ":param socket:   Socket to act on                \n"
+                ":type  socket:   UDTSOCKET                       \n"
+                "\n"
+                ":return:       Trace info for socket \n"
+                ":type  :       TRACEINFO \n" 
         },
         { 0x0 }
 };
