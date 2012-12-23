@@ -1,11 +1,11 @@
 PyUDT
 =====
 
-## About  
+# About  
 This extension is a C++ extension to CPython. And is tested on Linux only.
 
 
-## Boot-strap 
+# Boot-strap 
 Note:
 The default UDT repo does not specify an install path for the UDT library in its
 Makefile.  The attached submodule will by default install it into /usr/lib{,64} and
@@ -34,7 +34,7 @@ sudo python setup.py install
 ```
 
 
-## The Basics 
+# The Basics 
 `pydoc udt4` and `pydoc udt4.pyudt` are the best sources for documentation.
 
 The library is separated into two primary parts:
@@ -48,28 +48,42 @@ the C-api interface.
 provided by the standard library.  The class wraps the udt4.UDTSOCKET type. 
 
 
-## Classes:
-
-___udt4.TRACEINFO__
-```
-Please see UDT::TRACEINFO in C-api or pydoc udt4.TRACEINFO for all members.  
-```
+## udt4:
 
 __udt4.UDTSOCKET__ 
+```python
+# Raw socket object. 
+
+Classes designed to be operated on by udt4 functions.
+
+socket = udt4.socket( ... ) 
+print(socket)                   # <type 'UDTSOCKET'> 
 ```
-.
+
+__udt4.UDTepoll__ 
+```python
+epoll  = udt4.UDTepoll() 
+print(epoll)                    # <type 'UDTepoll'>  
+
+epoll.add_usock(<type 'UDTSOCKET'> socket, int(flags)) 
 ```
 
 
-### Sockets:
+## pyudt: 
 
-__udt4.UDTSOCKET__ 
+Classes designed to work with other pyudt classes.
 
+__pyudt.UdtSocket()__ 
+```python
+socket = pyudt.UdtSocket( ... ) 
+print(socket)                   # <udt4.pyudt.UdtSocket object>  
+```  
 
+__pyudt.Epoll()__ 
+```python 
+epoll = pyudt.Epoll() 
+print(epoll)                    # <udt4.pyudt.Epoll object> 
 
-__udt4.pyudt__
-
-
-
-
+epoll.add_usock(<udt4.pyudt.UdtSocket object> socket, int(flags)) 
+```
 

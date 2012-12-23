@@ -1335,7 +1335,7 @@ static PyMethodDef pyudt4_module_methods[] = {
                 ":param protocol:       socket protocol                 \n"
                 ":type  protocol:       int()                           \n"
                 "\n"
-                "@return UDTSOCKET class instance"
+                ":return:       UDTSOCKET class instance"
 
         },
         {
@@ -1358,7 +1358,7 @@ static PyMethodDef pyudt4_module_methods[] = {
                 ":param backlog:        maximum size of queue           \n"
                 ":type  backlog:        int()                           \n"
                 "\n"
-                "@return 0 for success                                    "
+                ":return:       0 for success                           "
         },
         {
                 "accept",
