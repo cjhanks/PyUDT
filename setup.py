@@ -41,8 +41,8 @@
 #  
 
 VERSION = {
-        'major' : 0, 
-        'minor' : 3 
+        'major' : 1, 
+        'minor' : 0 
         }
 
 from distutils.core import setup, Extension 
