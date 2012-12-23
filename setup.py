@@ -54,9 +54,9 @@ udt4 = Extension(
             'src/py-udt4-epoll.cc',
             'src/py-udt4-socket.cc'
             ],
-        include_dirs    = ['/usr/local/include'],
+        include_dirs    = ['/usr/local/include', '/usr/include/'],
         libraries       = ['udt', 'pthread'],
-        library_dirs    = ['/usr/local/lib'],
+        library_dirs    = ['/usr/local/lib', '/usr/lib64/', '/usr/lib/'],
         define_macros   = [ ('NDEBUG', 1), 
                             ('MAJOR_VERSION', VERSION['major']), 
                             ('MINOR_VERSION', VERSION['minor']) 
@@ -64,7 +64,7 @@ udt4 = Extension(
         )
 
 setup(
-        name            = 'py-udt',
+        name            = 'py-udt4',
         version         = '%(major)i.%(minor)i' % VERSION,
         description     = 'Python bindings for UDT4',
         author          = 'Christopher J. Hanks',
