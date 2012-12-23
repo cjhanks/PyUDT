@@ -1,44 +1,11 @@
 /**
         @author         Christopher J. Hanks    <develop@cjhanks.name>
-        @license        py-udt4 is GPLv3, however it must be linked against UDT4
-                        libraries to be of use.  UDT4 license is below.
-        @date           12/16/2012 
-
-        # - UDT LICENSE ------------------------------------------------------ 
-        Copyright (c) 2001 - 2011, The Board of Trustees of the University of 
-        Illinois.  All rights reserved.
-
-        Redistribution and use in source and binary forms, with or without
-        modification, are permitted provided that the following conditions are
-        met:
-
-        * Redistributions of source code must retain the above
-          copyright notice, this list of conditions and the
-          following disclaimer.
-
-        * Redistributions in binary form must reproduce the
-          above copyright notice, this list of conditions
-          and the following disclaimer in the documentation
-          and/or other materials provided with the distribution.
-
-        * Neither the name of the University of Illinois
-          nor the names of its contributors may be used to
-          endorse or promote products derived from this
-          software without specific prior written permission.
-
-        THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
-        IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
-        THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-        PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
-        CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-        EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-        PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-        PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-        LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-        NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-        SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-        -----------------------------------------------------------------------
-  */
+        @license        py-udt4:        GPLv3 
+                        libudt4:        BSD 
+        
+        12/18/2012      Initial stub 
+        12/23/2012      Verified and cleaned for release 1.0  
+        */
 
 #include "py-udt4-epoll.hh"
 
@@ -98,13 +65,13 @@ pyudt4_epoll_add_usock(pyudt4_epoll_obj *self, PyObject *args)
 
         if (!PyArg_ParseTuple(args, "O|i", &sock, &flag)) {
                 PyErr_SetString(PyExc_TypeError,
-                        "Invalid usock"
+                        "argument: UDTSOCKET, flags"
                         );
 
                 return 0x0;
         }
         
-        /* increase the reft for each mapper */
+        /* increase the ref for each mapper */
         if (0x0 == flag || flag & 0x1) {
                 Py_XINCREF(sock);
                 self->readfds.insert(std::make_pair(sock->sock, sock));
@@ -122,6 +89,7 @@ pyudt4_epoll_add_usock(pyudt4_epoll_obj *self, PyObject *args)
 
         if (UDT::ERROR == UDT::epoll_add_usock(self->eid, sock->sock, &flag))
                 RETURN_UDT_RUNTIME_ERROR;
+        
 
         return Py_BuildValue("i",
                         self->readfds .count(sock->sock)  ? 0x1 : 0x0 |
@@ -139,7 +107,7 @@ pyudt4_epoll_add_ssock(pyudt4_epoll_obj *self, PyObject *args)
 
         if (!PyArg_ParseTuple(args, "i|i", &sock, &flag)) {
                 PyErr_SetString(PyExc_TypeError,
-                        "Invalid ssock"
+                        "argument: SYSSOCKET, flags"
                         );
 
                 return 0x0;
@@ -161,7 +129,7 @@ pyudt4_epoll_remove_usock(pyudt4_epoll_obj *self, PyObject *args)
 
         if (!PyArg_ParseTuple(args, "O|i", &sock, &flag)) {
                 PyErr_SetString(PyExc_TypeError,
-                        "Invalid usock"
+                        "argument: UDTSOCKET, flags" 
                         );
 
                 return 0x0;
@@ -170,22 +138,23 @@ pyudt4_epoll_remove_usock(pyudt4_epoll_obj *self, PyObject *args)
         /* decrease the ref for each mapper */
         if (0x0 == flag || flag & 0x2) {
                 Py_XDECREF(sock);
-                self->readfds.insert(std::make_pair(sock->sock, sock));
+                self->readfds.erase(sock->sock);
         }
         
         if (0x0 == flag || flag & 0x4) {
                 Py_XDECREF(sock);
-                self->writefds.insert(std::make_pair(sock->sock, sock));
+                self->writefds.erase(sock->sock);
         }
         
         if (0x0 == flag || flag & 0x8) {
                 Py_XDECREF(sock);
-                self->errfds.insert(std::make_pair(sock->sock, sock));
+                self->errfds.erase(sock->sock); 
         }
 
         if (UDT::ERROR == UDT::epoll_add_usock(self->eid, sock->sock, &flag))
                 RETURN_UDT_RUNTIME_ERROR;
         
+
         return Py_BuildValue("i",
                         self->readfds .count(sock->sock)  ? 0x1 : 0x0 |
                         self->writefds.count(sock->sock)  ? 0x2 : 0x0 |
@@ -201,7 +170,7 @@ pyudt4_epoll_remove_ssock(pyudt4_epoll_obj *self, PyObject *args)
 
         if (!PyArg_ParseTuple(args, "i", &sock)) {
                 PyErr_SetString(PyExc_TypeError,
-                        "Invalid usock"
+                        "argument: SYSSOCKET"
                         );
 
                 return 0x0;
@@ -209,7 +178,6 @@ pyudt4_epoll_remove_ssock(pyudt4_epoll_obj *self, PyObject *args)
         
         if (UDT::ERROR == UDT::epoll_remove_ssock(self->eid, sock)) 
                 RETURN_UDT_RUNTIME_ERROR;
-       
 
         Py_RETURN_NONE;
 }
@@ -452,7 +420,9 @@ initpyudt4_epoll_type(PyObject *module, PyObject *exception_type)
         pyudt4_exception_obj = exception_type; 
 
         pyudt4_epoll_type.tp_new = PyType_GenericNew;
+
         Py_INCREF(&pyudt4_epoll_type);
+        
         PyModule_AddObject(
                 module, "UDTepoll", (PyObject*) &pyudt4_epoll_type
                 );
