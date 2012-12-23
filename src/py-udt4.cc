@@ -411,6 +411,7 @@ pyudt4_socket(PyObject *py_self, PyObject *args)
                         PyExc_TypeError,
                         "arguments: [domain => AF_INET] [type] [protocol]"
                         );
+        
                 return 0x0;
         }
         
@@ -420,6 +421,7 @@ pyudt4_socket(PyObject *py_self, PyObject *args)
                 PyErr_SetString(
                         PyExc_RuntimeError, "Failed to initialize UDTSOCKET"
                         );
+                
                 return 0x0;
         } else {
                 sock->domain   = domain;
@@ -431,6 +433,7 @@ pyudt4_socket(PyObject *py_self, PyObject *args)
                 PyErr_SetString(
                         PyExc_ValueError, "UDT4 only support AF_INET for domain"
                         );
+                
                 return 0x0;
         }
 
@@ -653,7 +656,7 @@ pyudt4_getpeername(PyObject *py_self, PyObject *args)
                         "arguments: [UDTSOCKET]"
                         );
                 
-                return Py_BuildValue("i", 1);
+                return 0x0;
         }
         
         sockaddr_in client_stg;
@@ -1074,7 +1077,7 @@ pyudt4_sendmsg(PyObject *py_self, PyObject *args)
         
         if (pref_len > buf_len) {
                 /*
-                   udp dgram packets must be sent in a single send or those
+                   udp dgram packets must be sent in a single send for those
                    with in_order = false
                    */
                 char *new_buf = (char*)PyMem_Malloc(sizeof(char) * pref_len);
@@ -1543,8 +1546,8 @@ static PyMethodDef pyudt4_module_methods[] = {
                 ":param socket:   Socket to act on                \n"
                 ":type  socket:   UDTSOCKET                       \n"
                 "\n"
-                ":return:       Trace info for socket \n"
-                ":type  :       TRACEINFO \n" 
+                ":return:       Trace info for socket   \n"
+                ":type  :       TRACEINFO               \n" 
         },
         { 0x0 }
 };

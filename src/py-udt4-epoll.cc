@@ -209,7 +209,6 @@ pyudt4_epoll_wait(pyudt4_epoll_obj *self, PyObject *args)
                 std::set<UDTSOCKET>()
         };
 
-        
         struct {
                 std::set<SYSSOCKET> read;
                 std::set<SYSSOCKET> write;
@@ -276,7 +275,7 @@ pyudt4_epoll_wait(pyudt4_epoll_obj *self, PyObject *args)
 
 
         return Py_BuildValue("OOOO", uset.read, uset.write, 
-                             sset.read, sset.write);
+                                     sset.read, sset.write);
 }
 
 static PyMethodDef pyudt4_epoll_methods[] = {

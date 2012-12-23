@@ -5,7 +5,6 @@
         
         12/16/2012      Initial stub 
         12/23/2012      Verified and cleaned for release 1.0  
-        
         */
 
 #include "py-udt4-socket.hh" 
@@ -59,9 +58,7 @@ static PyMethodDef pyudt4_socket_methods[] = {
 
 static PyObject*
 pyudt4_socket_get_domain(pyudt4_socket_obj *self)
-{
-        return Py_BuildValue("i", self->domain);
-}
+{       return Py_BuildValue("i", self->domain);}
 
 
 static PyObject*
@@ -153,7 +150,7 @@ static PyTypeObject pyudt4_socket_type = {
     0,                                          /* tp_dictoffset        */
     (initproc)pyudt4_socket_init,               /* tp_init              */
     0,                                          /* tp_alloc             */
-    0,//pyudt4_socket_new,                          /* tp_new               */
+    0,                                          /* tp_new               */
 };
 
 
