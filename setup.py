@@ -65,8 +65,8 @@ udt4 = Extension(
         )
 
 setup(
-        name            = 'py-udt4',
-        version         = '%(major)i.%(minor)i.%(patch)i' % VERSION,
+        name            = 'pyudt4',
+        version         = '%(major)i.%(minor)i' % VERSION,
         description     = 'Python bindings for UDT4',
         author          = 'Christopher J. Hanks',
         author_email    = 'develop@cjhanks.name',
@@ -76,6 +76,8 @@ setup(
         ext_modules     = [udt4],
         license         = 'GPLv3', 
         download_url    = 'https://github.com/cjhanks/PyUDT',
+        keywords        = ['udt', 'pyudt', 'udt4'],
+        bugtrack_url    = 'https://github.com/cjhanks/PyUDT/issues',
         classifiers     = [
             'Development Status :: 3 - Alpha',
             'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
