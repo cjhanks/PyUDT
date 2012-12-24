@@ -448,6 +448,29 @@ pyudt4_socket(PyObject *py_self, PyObject *args)
 }
 
 
+static PyObject* 
+pyudt4_bind_to_udp(PyObject *py_self, PyObject *args) 
+{
+        pyudt4_socket_obj *sock = 0x0;
+        int udp_sock = -1;
+
+        if (!PyArg_ParseTuple(args, "Oi", &sock, &udp_sock)) {
+                PyErr_SetString(
+                        PyExc_TypeError,
+                        "arguments: [UDTSOCKET] [UDPSOCKET int()]"
+                        );
+
+                return 0x0; 
+        }
+
+        if (UDT::ERROR == UDT::bind(sock->sock, udp_sock))
+                RETURN_UDT_RUNTIME_ERROR;
+
+
+        Py_RETURN_NONE;
+}
+
+
 static PyObject*
 pyudt4_bind(PyObject *py_self, PyObject *args) 
 {
@@ -458,6 +481,12 @@ pyudt4_bind(PyObject *py_self, PyObject *args)
         int   port    = -1 ;
        
         if (!PyArg_ParseTuple(args, "Osi", &sock, &address, &port)) {
+                /* try bind_to_udp */
+                PyObject *tret = pyudt4_bind_to_udp(py_self, args);
+                if (0x0 != tret)
+                        return tret; 
+                
+                /* nope, just move on with error */
                 PyErr_SetString(
                         PyExc_TypeError,
                         "arguments: [address] [port]"
@@ -488,6 +517,7 @@ pyudt4_bind(PyObject *py_self, PyObject *args)
 
         return Py_BuildValue("i", 0);
 }
+
 
 static PyObject*
 pyudt4_listen(PyObject *py_self, PyObject *args) 
@@ -612,8 +642,13 @@ pyudt4_connect(PyObject *py_self, PyObject *args)
                 memset(&serv.sin_zero, '\0', sizeof(serv.sin_zero));
         }        
         
-        if (UDT::ERROR == UDT::connect(sock->sock, (sockaddr*) &serv, 
-                                       sizeof(serv)))
+        int rc; 
+        
+        Py_BEGIN_ALLOW_THREADS;
+        rc = UDT::connect(sock->sock, (sockaddr*) &serv, sizeof(serv));
+        Py_END_ALLOW_THREADS; 
+
+        if (UDT::ERROR == rc) 
                 RETURN_UDT_RUNTIME_ERROR;
         
         sock->valid = 1;
@@ -1352,6 +1387,12 @@ static PyMethodDef pyudt4_module_methods[] = {
                 ":param port:           local isten port to bind to     \n"
                 ":type  port:           int()                           \n"
                 "\n"
+        },
+        {
+                "bind_to_udp",
+                (PyCFunction)pyudt4_bind_to_udp,
+                METH_VARARGS,
+                "Bind an existing socket to a UDP socket" 
         },
         {
                 "listen",

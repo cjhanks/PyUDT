@@ -55,12 +55,12 @@ class UdtSocket(object):
             self.__sock = _sock
         else:
             self.__sock = udt4.socket(family, type, protocol) 
-   
+    
     
     @property
     def family(self):
         """ 
-        @return socket domain
+        :return: socket domain
         """
         return self.__sock.domain
 
@@ -68,7 +68,7 @@ class UdtSocket(object):
     @property
     def proto(self):
         """
-        @return socket protocol
+        :return: socket protocol
         """
         return self.__sock.protocol
 
@@ -76,7 +76,7 @@ class UdtSocket(object):
     @property
     def type(self):
         """
-        @return socket type
+        :return: socket type
         """
         return self.__sock.type
 
@@ -84,7 +84,7 @@ class UdtSocket(object):
     @property
     def UDTSOCKET(self):
         """
-        @return the underlying udtsocket primitive
+        :return: the underlying udtsocket primitive
         """
         return self.__sock 
 
@@ -116,7 +116,6 @@ class UdtSocket(object):
         return UdtSocket(_sock = accept[0]), accept[1] 
 
 
-
     def bind(self, address):
         """
         Binds port to device associted with address and specific port.
@@ -126,7 +125,6 @@ class UdtSocket(object):
         """
         udt4.bind(self.__sock, str(address[0]), int(address[1]))
         
-
 
     def close(self):
         """
@@ -299,7 +297,6 @@ class UdtSocket(object):
 
         Sets a socket option to the specified type.
         """
-        print(option, value) 
         udt4.setsockopt(self.__sock, option, value)
 
     
@@ -328,6 +325,13 @@ class UdtSocket(object):
         print(
             'WARNING: shutdown() does not exist in UDT4'
             )
+    
+
+    def read(self, size):
+        """
+        Wraps .recv() 
+        """
+        return self.recv(size) 
 
 
     def recv(self, size):
@@ -368,6 +372,13 @@ class UdtSocket(object):
         else:
             return udt4.recvfile(self.__sock, fd.name)
 
+    
+    def write(self, data):
+        """
+        Wraps .send() 
+        """
+        return self.send(data) 
+
 
     def send(self, data, padding = None):
         """
@@ -391,7 +402,7 @@ class UdtSocket(object):
     
     def sendto(self, data, padding = None):
         """
-        @see UdtSocket.sendmsg()
+        :see: UdtSocket.sendmsg()
         """
         return self.sendmsg(data, padding) 
 
