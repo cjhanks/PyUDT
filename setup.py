@@ -42,7 +42,8 @@
 
 VERSION = {
         'major' : 0, 
-        'minor' : 5 
+        'minor' : 5,
+        'patch' : 0,
         }
 
 from distutils.core import setup, Extension 
@@ -53,9 +54,7 @@ udt4 = Extension(
             'src/py-udt4.cc', 
             'src/py-udt4-epoll.cc',
             'src/py-udt4-socket.cc'
-            ],
-
-
+                        ],
         include_dirs    = ['/usr/local/include', '/usr/include/'],
         libraries       = ['udt', 'pthread'],
         library_dirs    = ['/usr/local/lib', '/usr/lib64/', '/usr/lib/'],
@@ -67,7 +66,7 @@ udt4 = Extension(
 
 setup(
         name            = 'py-udt4',
-        version         = '%(major)i.%(minor)i' % VERSION,
+        version         = '%(major)i.%(minor)i.%(patch)i' % VERSION,
         description     = 'Python bindings for UDT4',
         author          = 'Christopher J. Hanks',
         author_email    = 'develop@cjhanks.name',
@@ -75,4 +74,13 @@ setup(
         packages        = ['udt4'],
         package_dir     = { '' : 'lib' },
         ext_modules     = [udt4],
+        license         = 'GPLv3', 
+        download_url    = 'https://github.com/cjhanks/PyUDT',
+        classifiers     = [
+            'Development Status :: 3 - Alpha',
+            'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
+            'Topic :: Software Development :: Libraries',
+            'Programming Language :: Python :: 2.6',
+            'Programming Language :: Python :: 2.7'
+            ]
     ) 
