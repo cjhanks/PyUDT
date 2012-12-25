@@ -92,9 +92,9 @@ pyudt4_epoll_add_usock(pyudt4_epoll_obj *self, PyObject *args)
         
 
         return Py_BuildValue("i",
-                        self->readfds .count(sock->sock)  ? 0x1 : 0x0 |
-                        self->writefds.count(sock->sock)  ? 0x2 : 0x0 |
-                        self->errfds  .count(sock->sock)  ? 0x8 : 0x0 
+                        self->readfds .count(sock->sock) ? 0x1 : 0x0 |
+                        self->writefds.count(sock->sock) ? 0x2 : 0x0 |
+                        self->errfds  .count(sock->sock) ? 0x8 : 0x0 
                         );
 }
 

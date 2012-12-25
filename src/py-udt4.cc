@@ -434,6 +434,7 @@ pyudt4_socket(PyObject *py_self, PyObject *args)
                         PyExc_ValueError, "UDT4 only support AF_INET for domain"
                         );
                 
+                Py_DECREF(sock);
                 return 0x0;
         }
 
@@ -441,6 +442,7 @@ pyudt4_socket(PyObject *py_self, PyObject *args)
         sock->sock = UDT::socket(domain, type, protocol);
         
         if (UDT::ERROR == sock->sock) {
+                Py_DECREF(sock);
                 RETURN_UDT_RUNTIME_ERROR;
         }
 
@@ -465,7 +467,6 @@ pyudt4_bind_to_udp(PyObject *py_self, PyObject *args)
 
         if (UDT::ERROR == UDT::bind(sock->sock, udp_sock))
                 RETURN_UDT_RUNTIME_ERROR;
-
 
         Py_RETURN_NONE;
 }
@@ -503,16 +504,20 @@ pyudt4_bind(PyObject *py_self, PyObject *args)
                 
                 return 0x0;
         }
-
+         
         sock_addr.sin_family = sock->domain;
         sock_addr.sin_port   = htons(port);
-
+        
         memset(&sock_addr.sin_zero, '\0', sizeof(sock_addr.sin_zero));
- 
-        if (UDT::ERROR == UDT::bind(sock->sock, (sockaddr*) &sock_addr,
-                                    sizeof(sock_addr))) 
+        
+        int rc;
+        Py_BEGIN_ALLOW_THREADS;
+        rc = UDT::bind(sock->sock, (sockaddr*) &sock_addr, sizeof(sock_addr));
+        Py_END_ALLOW_THREADS; 
+        
+        if (UDT::ERROR == rc) 
                 RETURN_UDT_RUNTIME_ERROR;
-
+        
         sock->valid = 1;
 
         return Py_BuildValue("i", 0);
@@ -541,7 +546,7 @@ pyudt4_listen(PyObject *py_self, PyObject *args)
                 
                 return 0x0;
         }
-        
+         
         if (UDT::listen(sock->sock, backlog)) {
                 RETURN_UDT_RUNTIME_ERROR;
         }
@@ -556,8 +561,7 @@ pyudt4_accept(PyObject *py_self, PyObject *args)
         pyudt4_socket_obj *sock = 0x0;
         
         if (!PyArg_ParseTuple(args, "O", &sock)) {
-                PyErr_SetString(
-                        PyExc_TypeError,
+                PyErr_SetString(PyExc_TypeError,
                         "arguments: [UDTSOCKET]"
                         );
                 
@@ -576,7 +580,6 @@ pyudt4_accept(PyObject *py_self, PyObject *args)
         if (UDT::INVALID_SOCK == client) 
                 RETURN_UDT_RUNTIME_ERROR;
         
-
         /* create a socket */
         pyudt4_socket_obj *client_sock = 
                 (pyudt4_socket_obj*)_PyObject_New(pyudt4_socket_type);
@@ -605,7 +608,6 @@ pyudt4_accept(PyObject *py_self, PyObject *args)
                 return 0x0; 
         }
        
-
         return Py_BuildValue("Os", (PyObject*) client_sock, client_host); 
 }
 
@@ -663,8 +665,7 @@ pyudt4_close(PyObject *py_self, PyObject *args)
         pyudt4_socket_obj *sock = 0x0;
 
         if (!PyArg_ParseTuple(args, "O", &sock)) {
-                PyErr_SetString(
-                        PyExc_TypeError,
+                PyErr_SetString(PyExc_TypeError,
                         "arguments: [UDTSOCKET]"
                         );
                 
@@ -672,11 +673,15 @@ pyudt4_close(PyObject *py_self, PyObject *args)
         } 
         
         /* closing on invalid socket causes SIGSEGV */
-        if (sock->valid)
-                return Py_BuildValue("i", UDT::close(sock->sock));
-        else 
+        if (sock->valid) {
+                int rc;
+                Py_BEGIN_ALLOW_THREADS;
+                rc = UDT::close(sock->sock);
+                Py_END_ALLOW_THREADS; 
+                return Py_BuildValue("i", rc);
+        } else {
                 return Py_BuildValue("i", -1);
-
+        }
 } 
 
 
@@ -686,8 +691,7 @@ pyudt4_getpeername(PyObject *py_self, PyObject *args)
         pyudt4_socket_obj *sock = 0x0;
 
         if (!PyArg_ParseTuple(args, "O", &sock)) {
-                PyErr_SetString(
-                        PyExc_TypeError,
+                PyErr_SetString(PyExc_TypeError,
                         "arguments: [UDTSOCKET]"
                         );
                 
@@ -708,10 +712,16 @@ pyudt4_getpeername(PyObject *py_self, PyObject *args)
         memset(client_host, '\0', sizeof(client_host));
         memset(client_srvc, '\0', sizeof(client_srvc));
 
-        getnameinfo((sockaddr*) &client_stg, addr_len, 
-                    client_host, sizeof(client_host) , 
-                    client_srvc, sizeof(client_srvc) ,
-                    NI_NUMERICHOST|NI_NUMERICSERV);
+        if (getnameinfo((sockaddr*) &client_stg, addr_len, 
+                        client_host, sizeof(client_host) , 
+                        client_srvc, sizeof(client_srvc) ,
+                        NI_NUMERICHOST | NI_NUMERICSERV) ) {
+                PyErr_SetString(PyExc_RuntimeError,
+                        "Failed to getnameinfo(...)"
+                        );
+
+                return 0x0;
+        }
        
         return Py_BuildValue(
                         "si", client_host, ntohs(client_stg.sin_port)
@@ -747,10 +757,17 @@ pyudt4_getsockname(PyObject *py_self, PyObject *args)
         memset(client_host, '\0', sizeof(client_host));
         memset(client_srvc, '\0', sizeof(client_srvc));
 
-        getnameinfo((sockaddr*) &client_stg, addr_len, 
-                    client_host, sizeof(client_host) , 
-                    client_srvc, sizeof(client_srvc) ,
-                    NI_NUMERICHOST|NI_NUMERICSERV);
+        if (getnameinfo((sockaddr*) &client_stg, addr_len, 
+                        client_host, sizeof(client_host) , 
+                        client_srvc, sizeof(client_srvc) ,
+                        NI_NUMERICHOST | NI_NUMERICSERV) ) {
+                
+                PyErr_SetString(PyExc_RuntimeError,
+                        "Failed to getnameinfo(...)"
+                        );
+
+                return 0x0;
+        }
        
         return Py_BuildValue(
                         "si", client_host, ntohs(client_stg.sin_port)
@@ -1281,9 +1298,8 @@ pyudt4_recvfile(PyObject *py_self, PyObject *args)
 
         if (!PyArg_ParseTuple(args, "Osll|l", &sock, &fname, &offset, &size,
                               &block)) {
-                PyErr_SetString(
-                        PyExc_TypeError,
-                        "ERROR HERE"
+                PyErr_SetString(PyExc_TypeError,
+                        "ERROR RECVFILE args"
                         );
 
                 return 0x0;
@@ -1292,6 +1308,7 @@ pyudt4_recvfile(PyObject *py_self, PyObject *args)
         std::fstream fstrm(fname);
         
         int rc;
+        
         Py_BEGIN_ALLOW_THREADS;
         rc = UDT::recvfile(sock->sock, fstrm, offset, size, block);
         Py_END_ALLOW_THREADS;
@@ -1328,13 +1345,13 @@ pyudt4_perfmon(PyObject *self, PyObject *args)
                         );
 
                 return 0x0;
-        } else {
-                Py_INCREF(perf);
-        }
+        } 
 
         if (UDT::ERROR == UDT::perfmon(sock->sock, &perf->trace, 
-                                       clear == Py_True)) 
+                                       clear == Py_True)) { 
+                Py_DECREF(perf);   
                 RETURN_UDT_RUNTIME_ERROR;
+        }
 
         return (PyObject*) perf;
 }
