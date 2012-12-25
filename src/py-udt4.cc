@@ -1036,6 +1036,25 @@ pyudt4_getsockopt(PyObject *py_self, PyObject *args)
         return Py_BuildValue("i", -1);
 }
 
+
+static PyObject*
+pyudt4_getsockstate(PyObject *py_self, PyObject *args)
+{
+        pyudt4_socket_obj *sock = 0x0;
+
+        if (!PyArg_ParseTuple(args, "O", &sock)) {
+                PyErr_SetString(
+                        PyExc_TypeError,
+                        "arguments: [UDTSOCKET]" 
+                        );
+                
+                return 0x0;
+        }
+
+        return Py_BuildValue("i", UDT::getsockstate(sock->sock));
+}
+
+
 static PyObject*
 pyudt4_send(PyObject *py_self, PyObject *args)
 {
@@ -1509,6 +1528,15 @@ static PyMethodDef pyudt4_module_methods[] = {
                 "\n"
                 ":return:       Value associated with option    \n"
                 ":type  :       int(), long(), bool(), tuple()  \n" 
+        },
+        {
+                "getsockstate",
+                (PyCFunction)pyudt4_getsockstate,
+                METH_VARARGS,
+                "Return the current socket state"
+                "\n"
+                ":param socket: Socket to act on                \n"
+                ":type  socket: UDTSOCKET                       \n"
         },
         {
                 "send",
