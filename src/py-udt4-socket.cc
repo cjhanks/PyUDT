@@ -102,7 +102,7 @@ static PyGetSetDef  pyudt4_socket_getset[] = {
                 (char*) "address protocol"
         }, 
         {
-                (char*) "udtsocket",
+                (char*) "UDTSOCKET",
                 (getter) pyudt4_socket_get_udtsocket,
                 (setter) 0x0,
                 (char*) "underlying udtsocket"
