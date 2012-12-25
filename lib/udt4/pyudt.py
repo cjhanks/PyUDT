@@ -200,11 +200,19 @@ class UdtSocket(object):
         :param  option  Intrinsic class constant ie: pyudt.UDT_SNDBUF
         :type   option  int() 
 
-        @return Value - return type is variable dependent on specified option,
-                        can be bool(), int(), long(), or tuple() (for linger) 
+        :return: Value - return type is variable dependent on specified option,
+                         can be bool(), int(), long(), or tuple() (for linger) 
         """
         # TODO: write documentation associating the return types with options
         return udt4.getsockopt(self.__sock, option)
+    
+    
+    def getsockstate(self):
+        """
+        :return: Current socket state 
+        :type  : int() 
+        """
+        return udt4.getsockstate(self.__sock) 
 
    
     def gettimeout(self):
