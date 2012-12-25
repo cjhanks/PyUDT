@@ -39,19 +39,12 @@ def create_client(host, port):
     return True
 
 
-def init_file():
-    # initialize a file # 
-    idat = open('/dev/urandom', 'r')
-    odat = open('dat', 'wb') 
-
-    odat.write(idat.read(32 * 1024 * 1024)) 
-
-    return open('dat', 'r')
-
-
-def send_file(fp):
+def send_file():
     import os 
-    udt4.sendfile(client, fp.name, 0, os.stat(fp.name).st_size)
+    print('send_file...')
+    
+    udt4.sendfile(client, open('/dev/zero', 'r'), 0, 512 * 1024 * 1024l)
+    #udt4.sendfile(client, fp, 0, os.stat(fp.name).st_size)
 
 
 def main(settings):
@@ -63,11 +56,6 @@ def main(settings):
         print('failed to create client')
         return 1
     
-    send_file(init_file())
-    
-    import time
-    time.sleep(10)
-
-
+    send_file()
     udt4.close(client)
 

@@ -49,7 +49,7 @@ def accept_client():
 def recv_file(sock):
     odat = open('odat', 'wb')
 
-    udt4.recvfile(sock, odat.name, 0, 33554432)
+    udt4.recvfile(sock, odat, 0, 512 * 1024 * 1024l)
 
 
 def main(settings):
