@@ -41,6 +41,7 @@ pushd pyudt
 
 pushd epoll 
 clear 
+sleep 3 
 echo "........ TESTING pyudt.Epoll()" 
 ./server.py 
 wait 
@@ -57,6 +58,14 @@ clear
 echo "........ TESTING pyudt.UdtSocket() and options"
 ./server.py 
 popd 
+
+
+pushd fail0 
+clear 
+echo "........ TESTING fail0"
+./test.py 
+popd 
+
 popd  
 
 clear 
