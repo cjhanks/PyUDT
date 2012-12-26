@@ -66,7 +66,26 @@ def acquire_tcp_children(host, port, count):
     return children 
 
 
-def handle_socket_set(epoll, sock_set):
+def handle_socket_uset(epoll, sock_set):
+    """
+    Ideally this function should work for both UdtSocket type and socket.socket 
+    type.
+    
+    standard:
+    4   byte - version
+    8   byte - length 
+    k   byte - message 
+    """
+    for sock in sock_set:
+        try:
+            version = struct.unpack('i', sock.recv(4)) 
+        except Exception as err:
+            continue 
+
+        msg_len = struct.unpack('l', sock.recv(8))[0]
+        msg     = sock.recv(msg_len) 
+        
+def handle_socket_sset(epoll, sock_set):
     """
     Ideally this function should work for both UdtSocket type and socket.socket 
     type.
@@ -102,8 +121,11 @@ def main():
         sets = epoll.wait(True, False, 1000, True, False)
         
         sys.stderr.write('.')
-        for set in sets: 
-            handle_socket_set(epoll, set) 
+
+        handle_socket_uset(epoll, sets[0]) 
+        handle_socket_uset(epoll, sets[1]) 
+        handle_socket_sset(epoll, sets[2]) 
+        handle_socket_sset(epoll, sets[3]) 
 
         if len(sets[0]) == 0:
             i += 1 

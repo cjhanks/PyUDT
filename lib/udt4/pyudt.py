@@ -98,11 +98,8 @@ class UdtSocket(object):
         Resultantly __del__ may appear to 'hang', this is the defined correct
         behaviour.
         """
-        try:
-            self.close()
-        except Exception as err:
-            pass
-
+        pass
+    
 
     def accept(self):
         """
@@ -492,10 +489,11 @@ class Epoll(object):
         # the issue. 
         self.__ssock_map = dict() 
         
-        # since the UdtSocket() class closes its underling socket on __del__()
-        # we track the entry locally and remove it when all flags are removed 
-        # from the watch. 
-        self.__usock_map = dict() 
+    
+    def garbage_collect(self):
+        """
+        """ 
+        self.__epoll.garbage_collect() 
 
 
     def add_usock(self, udt_socket, events = 0x0):
@@ -506,8 +504,6 @@ class Epoll(object):
         :param  events:     Events to watch on 
         :type   events:     int() 
         """
-        self.__usock_map[udt_socket.UDTSOCKET] = udt_socket 
-
         return self.__epoll.add_usock(udt_socket.UDTSOCKET, events) 
     
 
@@ -533,12 +529,7 @@ class Epoll(object):
         :param  events:     Events to remove from watch 
         :type   events:     int() 
         """
-        ret = self.__epoll.remove_usock(udt_socket.UDTSOCKET, events) 
-        
-        if 0x0 == ret:
-            del(self.__usock_map[udt_socket.UDTSOCKET]) 
-        
-        return ret 
+        return self.__epoll.remove_usock(udt_socket.UDTSOCKET, events) 
     
 
     def remove_ssock(self, sys_socket, events = 0x0):
@@ -550,7 +541,7 @@ class Epoll(object):
         :type   events:     int() 
         """
         assert sys_socket.fileno() in self.__ssock_map, \
-                'pyudt library error : socket should be in map' 
+                'pyudt library error : socket should be in ssmap' 
 
         del(self.__ssock_map[sys_socket.fileno()])
 
@@ -579,9 +570,9 @@ class Epoll(object):
         """
         ret = self.__epoll.wait(do_uread, do_uwrite, wait, do_sread, do_swrite) 
         
-        return  (
-            frozenset(map(lambda s: self.__usock_map[s], ret[0])),
-            frozenset(map(lambda s: self.__usock_map[s], ret[1])),
-            frozenset(map(lambda s: self.__ssock_map[s], ret[2])),
-            frozenset(map(lambda s: self.__ssock_map[s], ret[3]))
+        return (
+            frozenset(map(lambda s: UdtSocket(_sock = s), ret[0])), 
+            frozenset(map(lambda s: UdtSocket(_sock = s), ret[1])), 
+            frozenset(map(lambda s: self.__ssock_map[s] , ret[2])),
+            frozenset(map(lambda s: self.__ssock_map[s] , ret[3]))
             ) 
