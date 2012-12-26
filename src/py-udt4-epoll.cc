@@ -17,18 +17,13 @@
 extern "C" {
 #endif 
 
-static PyObject *pyudt4_exception_obj = 0x0; 
-
+static PyObject     *pyudt4_exception_obj = 0x0; 
+static PyTypeObject *pyudt4_socket_type   = 0x0;
 
 static int
 pyudt4_epoll_init(pyudt4_epoll_obj *self)
 {
         self->eid = UDT::epoll_create();
-        
-        /* C - api does not initialize C++ ctors */
-        self->readfds  = std::map<UDTSOCKET, pyudt4_socket_obj*>();
-        self->writefds = std::map<UDTSOCKET, pyudt4_socket_obj*>();
-        self->errfds   = std::map<UDTSOCKET, pyudt4_socket_obj*>();
         
         return 0;
 }
@@ -37,20 +32,6 @@ pyudt4_epoll_init(pyudt4_epoll_obj *self)
 static void
 pyudt4_epoll_dealloc(pyudt4_epoll_obj *self)
 {
-        /* decrement the references */
-        for (std::map<UDTSOCKET, pyudt4_socket_obj*>::iterator i = 
-             self->readfds.begin(); i != self->readfds.end(); ++i)
-                Py_XDECREF(i->second);
-        
-        for (std::map<UDTSOCKET, pyudt4_socket_obj*>::iterator i = 
-             self->writefds.begin(); i != self->writefds.end(); ++i)
-                Py_XDECREF(i->second);
-        
-        for (std::map<UDTSOCKET, pyudt4_socket_obj*>::iterator i = 
-             self->errfds.begin(); i != self->errfds.end(); ++i)
-                Py_XDECREF(i->second);
-        
-
         /* remove id from epoll */
         UDT::epoll_release(self->eid);
 }
@@ -71,31 +52,12 @@ pyudt4_epoll_add_usock(pyudt4_epoll_obj *self, PyObject *args)
                 return 0x0;
         }
         
-        /* increase the ref for each mapper */
-        if (0x0 == flag || flag & 0x1) {
-                Py_XINCREF(sock);
-                self->readfds.insert(std::make_pair(sock->sock, sock));
-        }
-        
-        if (0x0 == flag || flag & 0x4) {
-                Py_XINCREF(sock);
-                self->writefds.insert(std::make_pair(sock->sock, sock));
-        }
-        
-        if (0x0 == flag || flag & 0x8) {
-                Py_XINCREF(sock);
-                self->errfds.insert(std::make_pair(sock->sock, sock));
-        }
+        self->socks.push_back(sock->sock); 
 
         if (UDT::ERROR == UDT::epoll_add_usock(self->eid, sock->sock, &flag))
                 RETURN_UDT_RUNTIME_ERROR;
         
-
-        return Py_BuildValue("i",
-                        self->readfds .count(sock->sock) ? 0x1 : 0x0 |
-                        self->writefds.count(sock->sock) ? 0x2 : 0x0 |
-                        self->errfds  .count(sock->sock) ? 0x8 : 0x0 
-                        );
+        return Py_BuildValue("i", 0);
 }
 
 
@@ -135,31 +97,10 @@ pyudt4_epoll_remove_usock(pyudt4_epoll_obj *self, PyObject *args)
                 return 0x0;
         }
         
-        /* decrease the ref for each mapper */
-        if (0x0 == flag || flag & UDT_EPOLL_IN ) {
-                Py_XDECREF(sock);
-                self->readfds.erase(sock->sock);
-        }
-        
-        if (0x0 == flag || flag & UDT_EPOLL_OUT) {
-                Py_XDECREF(sock);
-                self->writefds.erase(sock->sock);
-        }
-        
-        if (0x0 == flag || flag & UDT_EPOLL_ERR) {
-                Py_XDECREF(sock);
-                self->errfds.erase(sock->sock); 
-        }
-
         if (UDT::ERROR == UDT::epoll_remove_usock(self->eid, sock->sock))
                 RETURN_UDT_RUNTIME_ERROR;
         
-
-        return Py_BuildValue("i",
-                        self->readfds .count(sock->sock)  ? 0x1 : 0x0 |
-                        self->writefds.count(sock->sock)  ? 0x2 : 0x0 |
-                        self->errfds  .count(sock->sock)  ? 0x8 : 0x0 
-                        );
+        return Py_BuildValue("i", 0);
 }
 
 
@@ -246,20 +187,27 @@ pyudt4_epoll_wait(pyudt4_epoll_obj *self, PyObject *args)
                 PyFrozenSet_New(0x0)
         };
 
-        
         /* UDTSOCKET sets */
         for (std::set<UDTSOCKET>::iterator i = usock.read.begin();
              i != usock.read.end(); ++i) {
-                pyudt4_socket_obj *sock = self->readfds[*i];
-                Py_XINCREF(sock);
-                PySet_Add(uset.read , (PyObject*) sock); 
+                pyudt4_socket_obj *sock =
+                        (pyudt4_socket_obj*)_PyObject_New(pyudt4_socket_type);
+                
+                sock->sock  = *i; 
+                sock->valid =  1;
+               
+                PySet_Add(uset.read, (PyObject*) sock);
         }
         
         for (std::set<UDTSOCKET>::iterator i = usock.write.begin();
              i != usock.write.end(); ++i) {
-                pyudt4_socket_obj *sock = self->writefds[*i];
-                Py_XINCREF(sock);
-                PySet_Add(uset.write, (PyObject*) sock); 
+                pyudt4_socket_obj *sock =
+                        (pyudt4_socket_obj*)_PyObject_New(pyudt4_socket_type);
+                
+                sock->sock  = *i; 
+                sock->valid =  1;
+                
+                PySet_Add(uset.write, (PyObject*) sock);
         }
 
         /* SYSSOCKET sets */
@@ -276,6 +224,20 @@ pyudt4_epoll_wait(pyudt4_epoll_obj *self, PyObject *args)
 
         return Py_BuildValue("OOOO", uset.read, uset.write, 
                                      sset.read, sset.write);
+}
+                
+static PyObject* 
+pyudt4_epoll_garbage_collect(pyudt4_epoll_obj *self)
+{
+        for (std::vector<UDTSOCKET>::iterator i = self->socks.begin();
+             i != self->socks.end(); ++i) {
+                if (UDT::getsockstate(*i) >= BROKEN) 
+                        UDT::epoll_remove_usock(self->eid, *i);
+        }
+
+        self->socks.clear();
+        
+        Py_RETURN_NONE;
 }
 
 static PyMethodDef pyudt4_epoll_methods[] = {
@@ -364,6 +326,16 @@ static PyMethodDef pyudt4_epoll_methods[] = {
                 "               frozenset(write_sys_sockets),\n"
                 "               frozenset(write_sys_sockets))\n"
         },
+        {
+                "garbage_collect",
+                (PyCFunction)pyudt4_epoll_garbage_collect,
+                METH_NOARGS, 
+                "The UDT epoll doesn't track closed UDP sockets (afaik)   \n"
+                "to alleviate the potential resource leak, all UDTSOCKET's\n"
+                "are tracked.  When you execute the garbage_collect, it   \n"
+                "will iterate the sockets and remove the UDTSOCKETS from  \n"
+                "the epoll which are known dead."
+        },
         { 0x0 }
 };
 
@@ -411,11 +383,13 @@ static PyTypeObject pyudt4_epoll_type = {
 
 
 PyTypeObject*
-initpyudt4_epoll_type(PyObject *module, PyObject *exception_type)
+initpyudt4_epoll_type(PyObject *module, PyObject *exception_type, 
+                      PyTypeObject *socket_type)
 {
         if (PyType_Ready(&pyudt4_epoll_type) < 0)
                 return 0x0;
-
+        
+        pyudt4_socket_type   = socket_type;
         pyudt4_exception_obj = exception_type; 
 
         pyudt4_epoll_type.tp_new = PyType_GenericNew;

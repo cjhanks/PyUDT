@@ -1674,8 +1674,8 @@ init_udt4()
 
         
         pyudt4_socket_type   = initpyudt4_socket_type(m);
-        
-        pyudt4_epoll_type    = initpyudt4_epoll_type(m, pyudt4_exception_obj);
+        pyudt4_epoll_type    = initpyudt4_epoll_type(m, pyudt4_exception_obj, 
+                                                     pyudt4_socket_type);
         
         assert(0x0 != pyudt4_exception_obj);
 
