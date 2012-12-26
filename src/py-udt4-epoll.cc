@@ -136,22 +136,22 @@ pyudt4_epoll_remove_usock(pyudt4_epoll_obj *self, PyObject *args)
         }
         
         /* decrease the ref for each mapper */
-        if (0x0 == flag || flag & 0x2) {
+        if (0x0 == flag || flag & UDT_EPOLL_IN ) {
                 Py_XDECREF(sock);
                 self->readfds.erase(sock->sock);
         }
         
-        if (0x0 == flag || flag & 0x4) {
+        if (0x0 == flag || flag & UDT_EPOLL_OUT) {
                 Py_XDECREF(sock);
                 self->writefds.erase(sock->sock);
         }
         
-        if (0x0 == flag || flag & 0x8) {
+        if (0x0 == flag || flag & UDT_EPOLL_ERR) {
                 Py_XDECREF(sock);
                 self->errfds.erase(sock->sock); 
         }
 
-        if (UDT::ERROR == UDT::epoll_add_usock(self->eid, sock->sock, &flag))
+        if (UDT::ERROR == UDT::epoll_remove_usock(self->eid, sock->sock))
                 RETURN_UDT_RUNTIME_ERROR;
         
 
