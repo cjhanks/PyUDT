@@ -170,11 +170,14 @@ class UdtSocket(object):
                          self.__sock.protocol, self.__sock)
 
 
-    def fileno(self, udt_fileno = False):
+    def fileno(self, udt_fileno = True):
         """
         Return the associated UDTSOCKET instance.  
         """
-        return self.__sock.UDTSOCKET
+        if udt_fileno:
+            return self.__sock.UDTSOCKET
+        else:
+            assert 1 == 2, 'UDP .fileno() not implemented yet'
 
 
     def getpeername(self):
@@ -437,9 +440,9 @@ class UdtSocket(object):
         :type   inorder bool() 
         """ 
         if None == padding:
-            return udt4.sendmsg(self.__sock, data)
+            return udt4.sendmsg(self.__sock, data, len(data))
         else:
-            return udt4.sendmsg(self.__sock, data, padding)
+            return udt4.sendmsg(self.__sock, data, len(data), padding)
          
 
     def sendfile(self, fd):
