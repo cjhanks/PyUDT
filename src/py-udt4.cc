@@ -1216,7 +1216,7 @@ pyudt4_recv(PyObject *py_self, PyObject *args)
                 RETURN_UDT_RUNTIME_ERROR;
         }
 
-        PyObject *ret = Py_BuildValue("s#", buf, buf_len);
+        PyObject *ret = Py_BuildValue("s#", buf, rc);
         PyMem_Free(buf);
 
         return ret;
@@ -1264,7 +1264,7 @@ pyudt4_recvmsg(PyObject *py_self, PyObject *args)
                 RETURN_UDT_RUNTIME_ERROR;
         }
 
-        PyObject *ret = Py_BuildValue("s#", buf, buf_len);
+        PyObject *ret = Py_BuildValue("s#", buf, rc);
         PyMem_Free(buf);
 
         return ret;
