@@ -66,7 +66,7 @@ udt4 = Extension(
 
 setup(
         name            = 'pyudt4',
-        version         = '%(major)i.%(minor)i' % VERSION,
+        version         = '%(major)i.%(minor)i.%(patch)s' % VERSION,
         description     = 'Python bindings for UDT4',
         author          = 'Christopher J. Hanks',
         author_email    = 'develop@cjhanks.name',
