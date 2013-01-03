@@ -1275,33 +1275,58 @@ pyudt4_sendfile(PyObject *py_self, PyObject *args)
 {
         pyudt4_socket_obj *sock = 0x0;
         
-        char *fname;
+        PyObject *fobj;
         long  offset;
         long  size;
         int   block = 7320000;
-
-        if (!PyArg_ParseTuple(args, "Osll|l", &sock, &fname, &offset, &size,
+        
+        if (!PyArg_ParseTuple(args, "OOll|l", &sock, &fobj, &offset, &size,
                               &block)) {
-                PyErr_SetString(
-                        PyExc_TypeError,
-                        "ERROR HERE"
+                PyErr_SetString(PyExc_TypeError,
+                        "arguments: [UDTSOCKET] [FILEOBJ] [LONG] [LONG] [INT]"
+                        );
+
+                return 0x0;
+        } 
+
+        /* acquire the file obj */
+        if (!PyFile_Check(fobj)) {
+                PyErr_SetString(PyExc_ValueError,
+                        "File must be file object"
                         );
 
                 return 0x0;
         }
+       
+        FILE *fd  = PyFile_AsFile(fobj);
+        char *buf = (char*) PyMem_Malloc(block);
+        long  cnt = 0;
+        long  rc; 
         
-        std::fstream fstrm(fname);
-
-        int rc;
-        
+        PyFile_IncUseCount((PyFileObject*) fobj);
         Py_BEGIN_ALLOW_THREADS;
-        rc = UDT::sendfile(sock->sock, fstrm, offset, size, block);
+        
+        while (cnt < size) {
+                rc = fread(buf, sizeof(char), 
+                           block > (size - cnt) ? block : (size - cnt), fd
+                          );
+        
+                if (0 == rc && feof(fd)) {
+                        break;
+                } else {
+                        rc = UDT::send(sock->sock, buf, rc, 0);
+
+                        if (UDT::ERROR == rc)
+                                break; 
+                        else 
+                                cnt += rc;
+                }
+        }
+        
         Py_END_ALLOW_THREADS; 
-
-        if (UDT::ERROR == rc)
-                RETURN_UDT_RUNTIME_ERROR;
-
-        return Py_BuildValue("i", 0);
+        PyFile_DecUseCount((PyFileObject*) fobj);
+        
+        return Py_BuildValue("l", cnt);
 } 
 
 
@@ -1310,32 +1335,53 @@ pyudt4_recvfile(PyObject *py_self, PyObject *args)
 {
         pyudt4_socket_obj *sock = 0x0;
         
-        char *fname;
+        PyObject *fobj;
         long  offset;
         long  size;
         int   block = 366000;
 
-        if (!PyArg_ParseTuple(args, "Osll|l", &sock, &fname, &offset, &size,
+        if (!PyArg_ParseTuple(args, "OOll|l", &sock, &fobj, &offset, &size,
                               &block)) {
                 PyErr_SetString(PyExc_TypeError,
-                        "ERROR RECVFILE args"
+                        "arguments: [UDTSOCKET] [FILEOBJ] [LONG] [LONG] [INT]"
+                        );
+
+                return 0x0;
+        }
+       
+        /* acquire the file obj */
+        if (!PyFile_Check(fobj)) {
+                PyErr_SetString(PyExc_ValueError,
+                        "File must be file object"
                         );
 
                 return 0x0;
         }
         
-        std::fstream fstrm(fname);
+        FILE *fd  = PyFile_AsFile(fobj);
+        char *buf = (char*) PyMem_Malloc(block);
+        long cnt  = 0; 
+        long rc;
+
+        PyFile_IncUseCount((PyFileObject*) fobj);
+        Py_BEGIN_ALLOW_THREADS; 
+
+        while (cnt < size) {
+                rc = UDT::recv(sock->sock, buf, block, 0);
+
+                if (UDT::ERROR == rc) {
+                        break;
+                } else {
+                        cnt += fwrite(buf, sizeof(char), rc, fd);
+                }
+        }
         
-        int rc;
-        
-        Py_BEGIN_ALLOW_THREADS;
-        rc = UDT::recvfile(sock->sock, fstrm, offset, size, block);
-        Py_END_ALLOW_THREADS;
-        
-        if (UDT::ERROR == rc) 
-                RETURN_UDT_RUNTIME_ERROR;
-        
-        return Py_BuildValue("i", 0);
+        Py_END_ALLOW_THREADS; 
+        PyFile_DecUseCount((PyFileObject*) fobj);
+
+        PyMem_Free(buf);
+
+        return Py_BuildValue("l", cnt);
 } 
 
 

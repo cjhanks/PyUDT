@@ -170,6 +170,7 @@ pyudt4_epoll_wait(pyudt4_epoll_obj *self, PyObject *args)
                         );
         Py_END_ALLOW_THREADS;
 
+
         if (UDT::ERROR == rc)
                 RETURN_UDT_RUNTIME_ERROR;
 
