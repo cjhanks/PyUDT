@@ -24,7 +24,6 @@ typedef struct __pyudt4_epoll_obj{
 
         /** UDTSOCKET eid sets */
         std::vector<UDTSOCKET> socks; 
-        //std::map<UDTSOCKET, pyudt4_socket_obj*> readfds, writefds, errfds;
         
 } pyudt4_epoll_obj;
 

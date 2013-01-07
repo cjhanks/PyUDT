@@ -608,7 +608,8 @@ pyudt4_accept(PyObject *py_self, PyObject *args)
                 return 0x0; 
         }
        
-        return Py_BuildValue("Os", (PyObject*) client_sock, client_host); 
+        return Py_BuildValue("O(si)", (PyObject*) client_sock, client_host,
+                             client_stg.sin_port);
 }
 
 
