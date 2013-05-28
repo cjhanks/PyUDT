@@ -465,7 +465,7 @@ pyudt4_bind_to_udp(PyObject *py_self, PyObject *args)
                 return 0x0; 
         }
 
-        if (UDT::ERROR == UDT::bind(sock->sock, udp_sock))
+        if (UDT::ERROR == UDT::bind2(sock->sock, udp_sock))
                 RETURN_UDT_RUNTIME_ERROR;
 
         Py_RETURN_NONE;

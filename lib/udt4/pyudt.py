@@ -113,14 +113,18 @@ class UdtSocket(object):
         return UdtSocket(_sock = accept[0]), accept[1] 
 
 
-    def bind(self, address):
+    def bind(self, arg):
         """
-        Binds port to device associted with address and specific port.
+        Binds the UDT socket to address and specific port OR binds 
+	UDT directly on an existing UDP socket.
 
-        :param  address:    device ip port pair  
-        :type   address:    tuple( str(), int() )
+        :param  arg:    device ip port pair or an existing UDP socket  
+        :type   arg:    tuple( str(), int() ) or a UDP socket.socket
         """
-        udt4.bind(self.__sock, str(address[0]), int(address[1]))
+	if isinstance(arg,socklib.socket):
+		udt4.bind_to_udp(self.__sock,arg.fileno())
+	else:
+        	udt4.bind(self.__sock, str(arg[0]), int(arg[1]))
         
 
     def close(self):
