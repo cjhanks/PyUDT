@@ -1,3 +1,3 @@
 [submodule "udt"]
 	path = udt
-	url = git://github.com/cjhanks/udt.git
+	url = git://git.code.sf.net/p/udt/git udt-git
