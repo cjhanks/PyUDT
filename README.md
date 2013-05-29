@@ -1,54 +1,40 @@
 PyUDT
 =====
 
-# About  
-This extension is a C++ extension to CPython. And is tested on Linux only.
+PyUDT is a python binding to the high-performance [UDT library](http://udt.sourceforge.net/).
+
+This extension will only work with CPython on a Linux system.  Some minor fixes may be needed to make it function on
+Unix, and there is no attempt to make it functional on Windows.`
 
 
-# Boot-strap 
-Note:
-The default UDT repo does not specify an install path for the UDT library in its
-Makefile.  The attached submodule will by default install it into /usr/lib{,64} and
-/usr/include/udt.  If you have installed it in a different location, you may need to
-edit the setup.py for the linking step. 
+## Installation 
 
+In this module is a submodule `./udt` which links to the Sourceforge GIT repo of the UDT development.  Alternatively you
+can use your own installation. 
+
+Note that the standard udt Makefile does not specify an install command, the local extension will look in the usual
+places, however you may need to change `setup.py` if you have installed to an unusual place.
+
+
+## Usage 
+
+Using `pydoc udt4` and `pydoct udt4.pyudt` are the best sources for documentation, there exists no external documentation.  
+The code is fairly well commented, especially when the interface differs from the C++ API interface. 
+
+There are no documented examples however there are unit tests in `./test/` which accomplish more or less the same goal.
+
+The library is broken up into two independent parts:
+*	Content imported from the `udt4` interface 
+*	Content imported from the `udt4.pyudt` interface 
+
+### udt4 
+```python
+import udt4 as udt 
 ```
-#
-# ls 
-# setup.py README.md lib example ... 
-# 
-git submodule init 
-git submodule update 
 
-# move library and headers to appropriate location 
-pushd udt/UDT4 
-make
-make install 
-sudo cp src/libudt.{so,a} /usr/lib64/   # or /usr/lib/ on 32 it
-sudo cp src/udt /usr/include/ 
-popd 
-
-# build extension 
-python setup.py build 
-sudo python setup.py install 
-```
-
-
-# The Basics 
-`pydoc udt4` and `pydoc udt4.pyudt` are the best sources for documentation.
-
-The library is separated into two primary parts:
-
-* Content imported from udt4 interface with the udt4.UDTSOCKET type which is a direct
-representation of the UDTSOCKET C-type and is not callable, but is rather the first 
-argument on most udt4 functions. All function signatures attempt to more closely match
-the C-api interface.
-
-* Content imported from udt4.pyudt attempts to match the socket.socket() interface 
-provided by the standard library.  The class wraps the udt4.UDTSOCKET type. 
-
-
-## udt4:
+The plain `udt4` import seeks to have a near 1-to-1 correspondence with the base UDT C++ library.  There are no classes,
+only function calls where the first argument is a reference to a `udt4.UDTSOCKET` type, which is internally represented
+by the UDTSOCKET C-type (though for convenience reasons retains some information about how it was created).
 
 __udt4.UDTSOCKET__ 
 ```python
@@ -69,7 +55,15 @@ epoll.add_usock(<type 'UDTSOCKET'> socket, int(flags))
 ```
 
 
-## pyudt: 
+
+### udt4.pyudt 
+```python
+from udt4 import pyudt as udt  
+```
+
+The `pyudt` implementation tries to more closely match the python socket interface where possible.  Not all functions
+available in socket are available in `pyudt.UdtSocket()`.
+
 
 Classes designed to work with other pyudt classes.
 
