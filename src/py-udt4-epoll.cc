@@ -5,6 +5,8 @@
         
         12/18/2012      Initial stub 
         12/23/2012      Verified and cleaned for release 1.0  
+        05/28/2013      Attempt to fix bad implementation of EPOLL which has
+                        memory leak due to counting. 
         */
 
 #include "py-udt4-epoll.hh"
@@ -52,7 +54,8 @@ pyudt4_epoll_add_usock(pyudt4_epoll_obj *self, PyObject *args)
                 return 0x0;
         }
         
-        self->socks.push_back(sock->sock); 
+        Py_INCREF(sock);
+        self->obj_map[sock->sock] = sock; 
 
         if (UDT::ERROR == UDT::epoll_add_usock(self->eid, sock->sock, &flag))
                 RETURN_UDT_RUNTIME_ERROR;
@@ -97,6 +100,9 @@ pyudt4_epoll_remove_usock(pyudt4_epoll_obj *self, PyObject *args)
                 return 0x0;
         }
         
+        self->obj_map.erase(self->obj_map.find(sock->sock));
+        Py_DECREF(sock);
+
         if (UDT::ERROR == UDT::epoll_remove_usock(self->eid, sock->sock))
                 RETURN_UDT_RUNTIME_ERROR;
         
@@ -191,24 +197,19 @@ pyudt4_epoll_wait(pyudt4_epoll_obj *self, PyObject *args)
         /* UDTSOCKET sets */
         for (std::set<UDTSOCKET>::iterator i = usock.read.begin();
              i != usock.read.end(); ++i) {
-                pyudt4_socket_obj *sock =
-                        (pyudt4_socket_obj*)_PyObject_New(pyudt4_socket_type);
-                
-                sock->sock  = *i; 
-                sock->valid =  1;
-               
+                pyudt4_socket_obj *sock = self->obj_map[*i];
+
                 PySet_Add(uset.read, (PyObject*) sock);
+                Py_INCREF(sock);
         }
         
         for (std::set<UDTSOCKET>::iterator i = usock.write.begin();
              i != usock.write.end(); ++i) {
-                pyudt4_socket_obj *sock =
-                        (pyudt4_socket_obj*)_PyObject_New(pyudt4_socket_type);
                 
-                sock->sock  = *i; 
-                sock->valid =  1;
-                
+                pyudt4_socket_obj *sock = self->obj_map[*i];
+
                 PySet_Add(uset.write, (PyObject*) sock);
+                Py_INCREF(sock);
         }
 
         /* SYSSOCKET sets */
@@ -227,19 +228,6 @@ pyudt4_epoll_wait(pyudt4_epoll_obj *self, PyObject *args)
                                      sset.read, sset.write);
 }
                 
-static PyObject* 
-pyudt4_epoll_garbage_collect(pyudt4_epoll_obj *self)
-{
-        for (std::vector<UDTSOCKET>::iterator i = self->socks.begin();
-             i != self->socks.end(); ++i) {
-                if (UDT::getsockstate(*i) >= BROKEN) 
-                        UDT::epoll_remove_usock(self->eid, *i);
-        }
-
-        self->socks.clear();
-        
-        Py_RETURN_NONE;
-}
 
 static PyMethodDef pyudt4_epoll_methods[] = {
         {
@@ -326,16 +314,6 @@ static PyMethodDef pyudt4_epoll_methods[] = {
                 "               frozenset(write_udt_sockets),\n"
                 "               frozenset(write_sys_sockets),\n"
                 "               frozenset(write_sys_sockets))\n"
-        },
-        {
-                "garbage_collect",
-                (PyCFunction)pyudt4_epoll_garbage_collect,
-                METH_NOARGS, 
-                "The UDT epoll doesn't track closed UDP sockets (afaik)   \n"
-                "to alleviate the potential resource leak, all UDTSOCKET's\n"
-                "are tracked.  When you execute the garbage_collect, it   \n"
-                "will iterate the sockets and remove the UDTSOCKETS from  \n"
-                "the epoll which are known dead."
         },
         { 0x0 }
 };

@@ -8,7 +8,7 @@
 #define __PY_UDT_EPOLL_H_
 
 #include <Python.h>
-#include <vector> 
+#include <map> 
 
 #include "py-udt4-socket.hh"
 
@@ -21,9 +21,9 @@ typedef struct __pyudt4_epoll_obj{
         
         /**  epoll id */
         int eid;        
-
-        /** UDTSOCKET eid sets */
-        std::vector<UDTSOCKET> socks; 
+        
+        /** UDTSOCKET --> PyUDT socket map */
+        std::map<UDTSOCKET, pyudt4_socket_obj*> obj_map; 
         
 } pyudt4_epoll_obj;
 

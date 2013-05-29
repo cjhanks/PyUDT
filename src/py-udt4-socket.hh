@@ -2,6 +2,8 @@
         @author         Christopher J. Hanks    <develop@cjhanks.name>
         @license        py-udt4:        GPLv3 
                         libudt4:        BSD 
+
+        05/28/2013      Support udt4.11 new bind:: function for binding to UDP
         */
 
 
