@@ -15,7 +15,7 @@ import udt4
 
 __author__  = 'Christopher J. Hanks <develop@cjhanks.name>'
 __date__    = '12/15/2012' 
-__version__ = (0, 5) 
+__version__ = (0, 6) 
 
 # assert py-udt4 version is in sync with udt4.pyudt version
 # please read __init__.py for explanation of versiong schema  

@@ -354,7 +354,7 @@ static PyTypeObject pyudt4_perfmon_type = {
     0,                                          /* tp_setattro          */
     0,                                          /* tp_as_buffer         */
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,   /* tp_flags             */
-    "UDT::TRACEINFO",                             /* tp_doc               */
+    "UDT::TRACEINFO",                           /* tp_doc               */
     0,                                          /* tp_traverse          */
     0,                                          /* tp_clear             */
     0,                                          /* tp_richcompare       */
@@ -484,6 +484,7 @@ pyudt4_bind(PyObject *py_self, PyObject *args)
         if (!PyArg_ParseTuple(args, "Osi", &sock, &address, &port)) {
                 /* try bind_to_udp */
                 PyObject *tret = pyudt4_bind_to_udp(py_self, args);
+                
                 if (0x0 != tret)
                         return tret; 
                 

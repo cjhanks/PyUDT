@@ -40,21 +40,17 @@
 #   -----------------------------------------------------------------------
 #  
 
-VERSION = {
-        'major' : 0, 
-        'minor' : 5,
-        'patch' : 1,
-        }
+VERSION = { 'major' : 0 
+          , 'minor' : 6
+          , 'patch' : 0 }
 
-from distutils.core import setup, Extension 
+from setuptools import setup, Extension 
 
 udt4 = Extension(
         '_udt4',
-        sources         = [
-            'src/py-udt4.cc', 
-            'src/py-udt4-epoll.cc',
-            'src/py-udt4-socket.cc'
-                        ],
+        sources         = [ 'src/py-udt4.cc', 
+                            'src/py-udt4-epoll.cc',
+                            'src/py-udt4-socket.cc' ],
         include_dirs    = ['/usr/local/include', '/usr/include/'],
         libraries       = ['udt', 'pthread'],
         library_dirs    = ['/usr/local/lib', '/usr/lib64/', '/usr/lib/'],
