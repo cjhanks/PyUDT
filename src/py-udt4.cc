@@ -1076,39 +1076,22 @@ pyudt4_send(PyObject *py_self, PyObject *args)
                         );
                 
                 return 0x0;
-        } else {
-                if ((pref_len - buf_len) > buf_len) {
-                        PyErr_SetString(
-                                PyExc_ValueError,
-                                "preferred length must not double real "
-                                "buffer length"
-                                );
-
-                        return 0x0;
-                }
-        }
+        } 
         
         if (pref_len > buf_len) {
-                Py_BEGIN_ALLOW_THREADS;
-                rc = UDT::send(sock->sock, buf, buf_len, 0);
-                Py_END_ALLOW_THREADS;
+                PyErr_SetString(
+                        PyExc_ValueError,
+                        "Specified buffer length is larger than buffer"
+                        );
 
-                if (UDT::ERROR == rc) 
-                        RETURN_UDT_RUNTIME_ERROR;
+                return 0x0;
+        } 
+        
+        Py_BEGIN_ALLOW_THREADS;
+        rc = UDT::send(sock->sock, buf, buf_len, 0);
+        Py_END_ALLOW_THREADS;
 
-                /* send remainder */
-                memset(buf, '\0', pref_len - buf_len);
-                
-                Py_BEGIN_ALLOW_THREADS;
-                rc = UDT::send(sock->sock, buf, pref_len - buf_len, 0);
-                Py_END_ALLOW_THREADS;
-        } else {
-                Py_BEGIN_ALLOW_THREADS;
-                rc = UDT::send(sock->sock, buf, buf_len, 0);
-                Py_END_ALLOW_THREADS;
-        }
-                
-        if (UDT::ERROR == rc)   
+        if (UDT::ERROR == rc) 
                 RETURN_UDT_RUNTIME_ERROR;
 
         return Py_BuildValue("i", rc);
@@ -1136,41 +1119,21 @@ pyudt4_sendmsg(PyObject *py_self, PyObject *args)
                         );
                 
                 return 0x0;
-        } else {
-                if ((pref_len - buf_len) > buf_len) {
-                        PyErr_SetString(
-                                PyExc_ValueError,
-                                "preferred length must not double real "
-                                "buffer length"
-                                );
-
-                        return 0x0;
-                }
-        }
+        } 
         
         if (pref_len > buf_len) {
-                /*
-                   udp dgram packets must be sent in a single send for those
-                   with in_order = false
-                   */
-                char *new_buf = (char*)PyMem_Malloc(sizeof(char) * pref_len);
-                
-                memcpy(new_buf, buf , buf_len );
-                memset(&new_buf[buf_len], '\0', pref_len - buf_len);
-                
-                Py_BEGIN_ALLOW_THREADS;
-                rc = UDT::sendmsg(sock->sock, new_buf, pref_len, ttl, 
-                                  in_order != Py_False);
-                Py_END_ALLOW_THREADS;
+                PyErr_SetString(
+                        PyExc_ValueError,
+                        "Specified buffer length is larger than buffer"
+                        );
 
-                PyMem_Free(new_buf);
-        } else {
-                Py_BEGIN_ALLOW_THREADS;
-                rc = UDT::sendmsg(sock->sock, buf, buf_len, ttl, 
-                                  in_order != Py_False);
-                Py_END_ALLOW_THREADS;
-        }
+                return 0x0;
+        } 
         
+        Py_BEGIN_ALLOW_THREADS;
+        rc = UDT::sendmsg(sock->sock, buf, pref_len, ttl, in_order != Py_False);
+        Py_END_ALLOW_THREADS;
+
         if (UDT::ERROR == rc) 
                 RETURN_UDT_RUNTIME_ERROR;
 
@@ -1600,10 +1563,6 @@ static PyMethodDef pyudt4_module_methods[] = {
                 "\n"
                 ":param len:    Length of the incoming buffer   \n"
                 ":type  len:    int()                           \n"
-                "\n"
-                ":param pad:    Total send size (fix message on to pad of \n" 
-                "               this size)\n"
-                ":type  pad:    int()" 
         },
         {
                 "recv",
@@ -1633,10 +1592,6 @@ static PyMethodDef pyudt4_module_methods[] = {
                 "\n"
                 ":param len:      Length of the incoming buffer   \n"
                 ":type  len:      int()                           \n"
-                "\n"
-                ":param pad:      Total send size (fix message on to pad of \n" 
-                "                 this size)\n"
-                ":type  pad:      int()     \n"
                 "\n"
                 ":param ttl:      Time-to-live of message on MS   \n"
                 ":type  ttl:      int()                           \n"
