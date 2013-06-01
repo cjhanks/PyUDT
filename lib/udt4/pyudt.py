@@ -392,24 +392,15 @@ class UdtSocket(object):
         return self.send(data) 
 
 
-    def send(self, data, padding = None):
+    def send(self, data):
         """
         In non-blocking mode this will raise an exception, in blocking 
         mode (default) the call will wait on freed buffer space.
 
         :param  data    Data to be written
         :type   data    str() 
-
-        :param  padding Set a specified size the data should be written onto.
-                        eg: len(data) => 45 padding = 64, data would be sent as
-                        |45 bytes data|19 byte bzero| 
-
-        :type   padding int()
         """
-        if None == padding:
-            return udt4.send(self.__sock, data, len(data))
-        else:
-            return udt4.send(self.__sock, data, padding  )
+        return udt4.send(self.__sock, data, len(data))
 
     
     def sendto(self, data, padding = None):
@@ -419,7 +410,7 @@ class UdtSocket(object):
         return self.sendmsg(data, padding) 
 
 
-    def sendmsg(self, data, padding = None, ttl = -1, inorder = False):
+    def sendmsg(self, data, ttl = -1, inorder = False):
         """
         In non-blocking mode this will raise an exception, in blocking 
         mode (default) the call will wait on freed buffer space.
@@ -427,10 +418,6 @@ class UdtSocket(object):
         :param  data    Data to be written
         :type   data    str() 
 
-        :param  padding Set a specified size the data should be written onto.
-                        eg: len(data) => 45 padding = 64, data would be sent as
-                        |45 bytes data|19 byte bzero| 
-        :type   padding int()
 
         :param  ttl     Time to live for the message in ms : -1 is infinite 
                         ie: garuanteed arrival
@@ -440,10 +427,7 @@ class UdtSocket(object):
                         they were sent.
         :type   inorder bool() 
         """ 
-        if None == padding:
-            return udt4.sendmsg(self.__sock, data, len(data))
-        else:
-            return udt4.sendmsg(self.__sock, data, len(data), padding)
+        return udt4.sendmsg(self.__sock, data, len(data))
          
 
     def sendfile(self, fd):
