@@ -51,12 +51,14 @@ class UdtSocket(object):
         :type   _sock:      UdtSocket() 
 
         """
-        if _sock != None:
-            self.__sock = _sock
-        else:
+        if _sock is None:
             self.__sock = udt4.socket(family, type, protocol) 
-    
-    
+            print('NEW SOCKET [%s]' % (self.__sock))
+            self.__sock.debug()
+        else:
+            self.__sock = _sock
+
+
     @property
     def family(self):
         """ 
@@ -99,6 +101,11 @@ class UdtSocket(object):
         behaviour.
         """
         pass
+
+
+    def __repr__(self):
+        return 'UdtSocket<id=%d>' % (self.__sock.UDTSOCKET)
+    
     
 
     def accept(self):
@@ -116,7 +123,7 @@ class UdtSocket(object):
     def bind(self, arg):
         """
         Binds the UDT socket to address and specific port OR binds 
-	UDT directly on an existing UDP socket.
+        UDT directly on an existing UDP socket.
 
         :param  arg:    device ip port pair or an existing UDP socket  
         :type   arg:    tuple( str(), int() ) or a UDP socket.socket
@@ -508,6 +515,8 @@ class Epoll(object):
         :param  events:     Events to watch on 
         :type   events:     int() 
         """
+        print(udt_socket.UDTSOCKET)
+        udt_socket.UDTSOCKET.debug()
         return self.__epoll.add_usock(udt_socket.UDTSOCKET, events) 
     
 

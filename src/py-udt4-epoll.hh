@@ -23,8 +23,7 @@ typedef struct __pyudt4_epoll_obj{
         int eid;        
         
         /** UDTSOCKET --> PyUDT socket map */
-        std::map<UDTSOCKET, pyudt4_socket_obj*> obj_map; 
-        
+        PyObject* obj_map;
 } pyudt4_epoll_obj;
 
 

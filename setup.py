@@ -39,6 +39,7 @@
 #   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #   -----------------------------------------------------------------------
 #  
+from os import getenv
 
 VERSION = { 'major' : 0 
           , 'minor' : 6
@@ -51,7 +52,8 @@ udt4 = Extension(
         sources         = [ 'src/py-udt4.cc', 
                             'src/py-udt4-epoll.cc',
                             'src/py-udt4-socket.cc' ],
-        include_dirs    = ['/usr/local/include', '/usr/include/'],
+        include_dirs    = ['/usr/local/include', '/usr/include/'
+                         , '%s/include' % (getenv('VIRTUAL_ENV'))],
         libraries       = ['udt', 'pthread'],
         library_dirs    = ['/usr/local/lib', '/usr/lib64/', '/usr/lib/'],
         define_macros   = [ ('NDEBUG', 1), 
