@@ -1,32 +1,39 @@
 /**
         @author         Christopher J. Hanks    <develop@cjhanks.name>
-        @license        py-udt4:        GPLv3 
-                        libudt4:        BSD 
-        
-        12/16/2012      Initial stub 
-        12/23/2012      Verified and cleaned for release 1.0  
+        @license        py-udt4:        GPLv3
+                        libudt4:        BSD
+
+        12/16/2012      Initial stub
+        12/23/2012      Verified and cleaned for release 1.0
         */
 
-#include "py-udt4-socket.hh" 
+#include "py-udt4-socket.hh"
 
 #ifdef __cplusplus
 extern "C" {
-#endif 
+#endif
 
 static PyObject*
-pyudt4_socket_init(PyTypeObject *type) 
+pyudt4_socket_init(PyTypeObject *type)
 {
         pyudt4_socket_obj *self = (pyudt4_socket_obj*)type->tp_alloc(type, 0);
 
-        self->sock     = 0;
+        self->sock     = -1;
         self->domain   = 0;
         self->type     = 0;
         self->protocol = 0;
-        self->valid    = 0;
 
         return (PyObject*)self;
 }
 
+static void
+pyudt4_socket_dealloc(pyudt4_socket_obj *self)
+{
+        if (self->sock > 0)
+            UDT::close(self->sock);
+
+        self->sock = -1;
+}
 
 static PyObject*
 pyudt4_socket_debug(pyudt4_socket_obj *self)
@@ -74,15 +81,15 @@ pyudt4_socket_get_protocol(pyudt4_socket_obj *self)
 static PyObject*
 pyudt4_socket_get_udtsocket(pyudt4_socket_obj *self)
 {       return Py_BuildValue("i", self->sock);     }
-        
-        
+
+
 static PyGetSetDef  pyudt4_socket_getset[] = {
         {
                 (char*) "family",
                 (getter) pyudt4_socket_get_domain,
                 (setter) 0x0,
                 (char*) "address domain"
-        }, 
+        },
         {       /* intential duplicate */
                 (char*) "domain",
                 (getter) pyudt4_socket_get_domain,
@@ -100,13 +107,13 @@ static PyGetSetDef  pyudt4_socket_getset[] = {
                 (getter) pyudt4_socket_get_protocol,
                 (setter) 0x0,
                 (char*) "address protocol"
-        }, 
+        },
         {
                 (char*) "UDTSOCKET",
                 (getter) pyudt4_socket_get_udtsocket,
                 (setter) 0x0,
                 (char*) "underlying udtsocket"
-        }, 
+        },
         { 0x0 }
 };
 
@@ -117,7 +124,7 @@ static PyTypeObject pyudt4_socket_type = {
     "UDTSOCKET",                                /* tp_name              */
     sizeof(pyudt4_socket_obj),                  /* tp_basicsize         */
     0,                                          /* tp_itemsize          */
-    0,                                          /* tp_dealloc           */
+    (destructor)pyudt4_socket_dealloc,          /* tp_dealloc           */
     0,                                          /* tp_print             */
     0,                                          /* tp_getattr           */
     0,                                          /* tp_setattr           */
@@ -161,9 +168,9 @@ initpyudt4_socket_type(PyObject *module)
                 return 0x0;
 
         pyudt4_socket_type.tp_new = PyType_GenericNew;
-       
+
         Py_INCREF(&pyudt4_socket_type);
-        
+
         PyModule_AddObject(
                 module, "UDTSOCKET", (PyObject*) &pyudt4_socket_type
                 );
@@ -173,4 +180,4 @@ initpyudt4_socket_type(PyObject *module)
 
 #ifdef __cplusplus
 }
-#endif 
+#endif

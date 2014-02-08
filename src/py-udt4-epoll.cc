@@ -7,6 +7,7 @@
         12/23/2012      Verified and cleaned for release 1.0
         05/28/2013      Attempt to fix bad implementation of EPOLL which has
                         memory leak due to counting.
+        02/08/2014      More attempts at making epoll a sensible implementation
         */
 
 #include "py-udt4-epoll.hh"
@@ -57,10 +58,10 @@ pyudt4_epoll_add_usock(pyudt4_epoll_obj *self, PyObject *args)
                 PyErr_SetString(PyExc_ValueError, "Null socket");
                 return 0x0;
         }
-        
+
         Py_INCREF(sock);
         PyObject* key = PyObject_GetAttrString((PyObject*) sock, "UDTSOCKET");
-        // TODO: Check        
+        // TODO: Check
 
         if (PyDict_SetItem(self->obj_map, key, (PyObject*) sock)) {
             Py_DECREF(sock);
@@ -81,10 +82,7 @@ pyudt4_epoll_add_ssock(pyudt4_epoll_obj *self, PyObject *args)
         int       flag = 0x0;
 
         if (!PyArg_ParseTuple(args, "i|i", &sock, &flag)) {
-                PyErr_SetString(PyExc_TypeError,
-                        "argument: SYSSOCKET, flags"
-                        );
-
+                PyErr_SetString(PyExc_TypeError, "argument: SYSSOCKET, flags");
                 return 0x0;
         }
 
@@ -106,7 +104,7 @@ pyudt4_epoll_remove_usock(pyudt4_epoll_obj *self, PyObject *args)
                 PyErr_SetString(PyExc_TypeError, "argument: UDTSOCKET, flags");
                 return 0x0;
         }
-        
+
 
         //self->obj_map.erase(self->obj_map.find(sock->sock));
         Py_DECREF(sock);
@@ -149,43 +147,29 @@ pyudt4_epoll_wait(pyudt4_epoll_obj *self, PyObject *args)
 
         if (!PyArg_ParseTuple(args, "OOl|OO", &do_uread, &do_uwrite, &timeo,
                               &do_sread, &do_swrite)) {
-                PyErr_SetString(PyExc_TypeError,
-                        "invalid epoll args"
-                        );
-
+                PyErr_SetString(PyExc_TypeError, "invalid epoll args");
                 return 0x0;
         }
 
         struct {
                 std::set<UDTSOCKET> read;
                 std::set<UDTSOCKET> write;
-        } usock = {
-                std::set<UDTSOCKET>(),
-                std::set<UDTSOCKET>()
-        };
-
-        struct {
-                std::set<SYSSOCKET> read;
-                std::set<SYSSOCKET> write;
-        } ssock = {
-                std::set<SYSSOCKET>(),
-                std::set<SYSSOCKET>()
-        };
+        } usock = { std::set<UDTSOCKET>(), std::set<UDTSOCKET>() }
+        , ssock = { std::set<UDTSOCKET>(), std::set<UDTSOCKET>() };
 
         int rc;
 
         Py_BEGIN_ALLOW_THREADS;
-        rc = UDT::epoll_wait(self->eid,
-                        do_uread  == Py_True ? &usock.read  : 0x0,
-                        do_uwrite == Py_True ? &usock.write : 0x0,
-                        timeo,
-                        do_sread  == Py_True ? &ssock.read  : 0x0,
-                        do_swrite == Py_True ? &ssock.write : 0x0
-                        );
+        rc = UDT::epoll_wait(self->eid
+                           , do_uread  == Py_True ? &usock.read  : 0x0
+                           , do_uwrite == Py_True ? &usock.write : 0x0
+                           , timeo
+                           , do_sread  == Py_True ? &ssock.read  : 0x0
+                           , do_swrite == Py_True ? &ssock.write : 0x0);
         Py_END_ALLOW_THREADS;
 
-        if (UDT::ERROR == rc && 
-          !(UDT::ERRORINFO::ETIMEOUT == UDT::getlasterror().getErrorCode() 
+        if (UDT::ERROR == rc &&
+          !(UDT::ERRORINFO::ETIMEOUT == UDT::getlasterror().getErrorCode()
           && timeo>= 0))
                 RETURN_UDT_RUNTIME_ERROR;
 
@@ -193,22 +177,15 @@ pyudt4_epoll_wait(pyudt4_epoll_obj *self, PyObject *args)
         struct {
                 PyObject *read;
                 PyObject *write;
-        }
-        uset = {
-                PyFrozenSet_New(0x0),
-                PyFrozenSet_New(0x0)
-        },
-        sset = {
-                PyFrozenSet_New(0x0),
-                PyFrozenSet_New(0x0)
-        };
+        } uset = { PyFrozenSet_New(0x0), PyFrozenSet_New(0x0) }
+        , sset = { PyFrozenSet_New(0x0), PyFrozenSet_New(0x0) };
 
         /* UDTSOCKET sets */
         for (std::set<UDTSOCKET>::iterator i = usock.read.begin();
              i != usock.read.end(); ++i) {
                 PyObject* sock_fd = Py_BuildValue("i", *i);
                 pyudt4_socket_obj *sock =
-                     (pyudt4_socket_obj*) PyDict_GetItem(self->obj_map 
+                     (pyudt4_socket_obj*) PyDict_GetItem(self->obj_map
                                                         , sock_fd);
                 Py_DECREF(sock_fd);
                 PySet_Add(uset.read, (PyObject*) sock);
@@ -219,7 +196,7 @@ pyudt4_epoll_wait(pyudt4_epoll_obj *self, PyObject *args)
              i != usock.write.end(); ++i) {
                 PyObject* sock_fd = Py_BuildValue("i", *i);
                 pyudt4_socket_obj *sock =
-                     (pyudt4_socket_obj*) PyDict_GetItem(self->obj_map 
+                     (pyudt4_socket_obj*) PyDict_GetItem(self->obj_map
                                                         , sock_fd);
                 Py_DECREF(sock_fd);
                 PySet_Add(uset.write, (PyObject*) sock);

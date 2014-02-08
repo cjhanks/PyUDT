@@ -1,7 +1,7 @@
 /**
         @author         Christopher J. Hanks    <develop@cjhanks.name>
-        @license        py-udt4:        GPLv3 
-                        libudt4:        BSD 
+        @license        py-udt4:        GPLv3
+                        libudt4:        BSD
         */
 
 
@@ -12,7 +12,7 @@
 #include <udt>
 
 /**
-        @macro RETURN_UDT_RUNTIME_ERROR 
+        @macro RETURN_UDT_RUNTIME_ERROR
         Set a runtime exception and return null
         */
 #define RETURN_UDT_RUNTIME_ERROR \
@@ -35,4 +35,4 @@
                 return 0x0;\
         } while (0)
 
-#endif // __PY_UDT_H_ 
+#endif // __PY_UDT_H_

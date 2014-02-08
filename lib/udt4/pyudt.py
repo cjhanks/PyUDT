@@ -107,6 +107,8 @@ class UdtSocket(object):
         return 'UdtSocket<id=%d>' % (self.__sock.UDTSOCKET)
     
     
+    def __eq__(self, other):
+        return other.UDTSOCKET.UDTSOCKET == self.__sock.UDTSOCKET
 
     def accept(self):
         """

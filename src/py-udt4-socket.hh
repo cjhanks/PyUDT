@@ -25,7 +25,6 @@ typedef struct __pyudt4_socket_obj {
         int domain;             /*< socket family       */
         int type;               /*< socket type         */
         int protocol;           /*< socket protocol     */
-        int valid;              /*< socket is valid     */
 } pyudt4_socket_obj;
 
 
